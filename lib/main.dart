@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:winop/screens/entryScreen.dart';
+import 'package:winop/screens/entry_screen.dart';
 
 void main() {
   runApp(const MyApp());

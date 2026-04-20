@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:winop/widgets/custombutton.dart';
-import './../widgets/circlelogo.dart';
+import 'package:winop/widgets/custom_button.dart';
+import './../widgets/circle_logo.dart';
+import '../screens/singup_screen.dart';
 
 class EntryScreen extends StatefulWidget {
   const EntryScreen({super.key});
@@ -11,19 +12,13 @@ class EntryScreen extends StatefulWidget {
 
 class _EntryScreenState extends State<EntryScreen> {
 
-  @override
-  void initState() {
-    super.initState();
-    // _goToNextScreen();
-  }
 
   void _goToNextScreen() async {
     await Future.delayed(const Duration(seconds: 3));
 
-    // Navigate to next screen (example: Home)
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const Placeholder()), // replace with your HomeScreen
+      MaterialPageRoute(builder: (_) => const SignUpScreen()), // replace with your HomeScreen
     );
   }
 
@@ -75,7 +70,7 @@ class _EntryScreenState extends State<EntryScreen> {
               text: "Get Started",
               backgroundColor: Colors.white,
               onPressed: () {
-                print("Clicked");
+                _goToNextScreen();
               },
             ),
             const SizedBox(height: 10),
