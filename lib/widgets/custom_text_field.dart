@@ -7,6 +7,7 @@ class CustomTextField extends StatefulWidget {
   final bool isPassword;
   final TextInputType keyboardType;
   final String? errorText;
+  final int maxLength;
 
   const CustomTextField({
     super.key,
@@ -16,6 +17,7 @@ class CustomTextField extends StatefulWidget {
     this.isPassword = false,
     this.keyboardType = TextInputType.text,
     this.errorText,
+    this.maxLength = 100,
   });
 
   @override
@@ -48,6 +50,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           controller: widget.controller,
           obscureText: _obscureText,
           keyboardType: widget.keyboardType,
+          maxLength: widget.maxLength,
           decoration: InputDecoration(
             hintText: widget.hint,
             errorText: widget.errorText,

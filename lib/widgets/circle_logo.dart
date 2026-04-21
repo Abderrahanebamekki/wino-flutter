@@ -4,9 +4,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 class CircleLogo extends StatelessWidget {
   final double size;
+  final String path;
 
   const CircleLogo({
     this.size = 200,
+    this.path = 'assets/images/logo.svg',
     super.key
   });
 
@@ -22,7 +24,7 @@ class CircleLogo extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: SvgPicture.asset(
-          'assets/images/logo.svg',
+          path,
           fit: BoxFit.cover
         ),
       ),

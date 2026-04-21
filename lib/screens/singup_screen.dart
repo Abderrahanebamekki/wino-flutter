@@ -112,6 +112,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         hint: 'Enter your email',
                         controller: emailController,
                         keyboardType: TextInputType.emailAddress,
+                        maxLength: 100,
                       ),
                       const SizedBox(height: 16),
                       CustomTextField(
@@ -120,6 +121,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         controller: passwordController,
                         isPassword: true,
                         errorText: passwordError,
+                        maxLength: 100,
                       ),
                     ],
                   ),
