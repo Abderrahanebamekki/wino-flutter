@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:winop/screens/verify_email_screen.dart';
 import '../widgets/back_title_bar.dart';
 import '../widgets/circle_logo.dart';
 import '../widgets/custom_button.dart';
@@ -23,13 +24,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (passwordController.text.length < 8) {
         passwordError = 'Password must be at least 8 characters';
       } else {
-        passwordError = null;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const VerifyEmailScreen()), // replace with your HomeScreen
+        );
       }
     });
-
-    if (passwordError == null) {
-      print('Create account clicked');
-    }
   }
 
   @override
