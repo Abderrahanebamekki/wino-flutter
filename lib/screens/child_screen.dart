@@ -1,77 +1,80 @@
 import 'package:flutter/material.dart';
-import 'package:winop/screens/child_screen.dart';
+import 'package:winop/widgets/back_title_bar.dart';
 import 'package:winop/widgets/circle_logo.dart';
 import 'package:winop/widgets/custom_button.dart';
 import 'package:winop/widgets/custom_text_field.dart';
 
-import '../widgets/back_title_bar.dart';
-
-class PersonalInfoScreen extends StatefulWidget {
-  const PersonalInfoScreen({super.key});
+class ChildInfoScreen extends StatefulWidget {
+  const ChildInfoScreen({super.key});
 
   @override
-  State<PersonalInfoScreen> createState() => PersonalInfoScreenState();
+  State<ChildInfoScreen> createState() => _ChildInfoScreenState();
 }
 
-class PersonalInfoScreenState extends State<PersonalInfoScreen> {
+class _ChildInfoScreenState extends State<ChildInfoScreen> {
   final firstNameController = TextEditingController();
   final lastNameController = TextEditingController();
-  final phoneController = TextEditingController();
+  final ageController = TextEditingController();
 
   @override
   void dispose() {
     firstNameController.dispose();
     lastNameController.dispose();
-    phoneController.dispose();
+    ageController.dispose();
     super.dispose();
   }
 
-  void _goToChildInfoScreen() {
-    print('Navigate to child info screen');
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ChildInfoScreen()),
-    );
+  void _goToHome() {
+    print('Go to Home');
+    // Navigator.pushReplacement(
+    //   context,
+    //   MaterialPageRoute(builder: (_) => const HomeScreen()),
+    // );
+  }
+
+  void _continue() {
+    print('Child info submitted');
+    _goToHome();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+
       appBar: BackTitleBar(
-        title: 'Personal Info',
+        title: 'Child Details',
         onTap: () => Navigator.pop(context),
       ),
+
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 10),
 
               const CircleLogo(
                 path: 'assets/images/person.svg',
-                size: 160,
+                size: 140,
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
 
               const Text(
-                'Complete Your Personal Information',
+                'Add Your Child Information',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 30,
+                  fontSize: 26,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF012F39),
-                  height: 1.2,
                 ),
               ),
 
               const SizedBox(height: 10),
 
               const Text(
-                'Let’s get to know you before we continue.',
+                'You can skip this step and add it later.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -79,7 +82,7 @@ class PersonalInfoScreenState extends State<PersonalInfoScreen> {
                 ),
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 30),
 
               Container(
                 width: double.infinity,
@@ -100,37 +103,54 @@ class PersonalInfoScreenState extends State<PersonalInfoScreen> {
                   children: [
                     CustomTextField(
                       label: 'First Name',
-                      hint: 'Enter your first name',
+                      hint: 'Enter child first name',
                       controller: firstNameController,
                     ),
                     const SizedBox(height: 16),
+
                     CustomTextField(
                       label: 'Last Name',
-                      hint: 'Enter your last name',
+                      hint: 'Enter child last name',
                       controller: lastNameController,
                     ),
                     const SizedBox(height: 16),
+
                     CustomTextField(
-                      label: 'Phone Number',
-                      hint: 'Enter your phone number',
-                      controller: phoneController,
-                      keyboardType: TextInputType.phone,
+                      label: 'Age',
+                      hint: 'Enter age',
+                      controller: ageController,
+                      keyboardType: TextInputType.number,
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 28),
+              const Spacer(),
 
               FractionallySizedBox(
                 widthFactor: 0.85,
                 child: CustomButton(
-                  text: 'Continue to Child Details',
+                  text: 'Continue',
                   backgroundColor: const Color(0xFF012F39),
                   textColor: Colors.white,
-                  onPressed: _goToChildInfoScreen,
+                  onPressed: _continue,
                 ),
               ),
+
+              const SizedBox(height: 12),
+
+              TextButton(
+                onPressed: _goToHome,
+                child: const Text(
+                  'Skip for now',
+                  style: TextStyle(
+                    color: Color(0xFF012F39),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
             ],
           ),
         ),
