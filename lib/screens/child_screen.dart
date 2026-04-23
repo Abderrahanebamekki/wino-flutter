@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:winop/screens/scan_device_screen.dart';
 import 'package:winop/widgets/back_title_bar.dart';
 import 'package:winop/widgets/circle_logo.dart';
 import 'package:winop/widgets/custom_button.dart';
@@ -25,16 +26,14 @@ class _ChildInfoScreenState extends State<ChildInfoScreen> {
   }
 
   void _goToHome() {
-    print('Go to Home');
-    // Navigator.pushReplacement(
-    //   context,
-    //   MaterialPageRoute(builder: (_) => const HomeScreen()),
-    // );
+
   }
 
   void _continue() {
-    print('Child info submitted');
-    _goToHome();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const ScanDeviceScreen()),
+    );
   }
 
   @override
