@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:winop/screens/personal_info_screen.dart';
 import '../widgets/back_title_bar.dart';
 import '../widgets/circle_logo.dart';
 import '../widgets/custom_button.dart';
@@ -59,14 +60,13 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       } else if (!RegExp(r'^[0-9]+$').hasMatch(codeController.text)) {
         codeError = 'Please enter only numbers';
       } else {
-        codeError = null;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const PersonalInfoScreen()), // replace with your HomeScreen
+        );
       }
     });
 
-    if (codeError == null) {
-      print('Verify code clicked');
-      // Navigate to next screen (e.g., home screen or password setup)
-    }
   }
 
   void _resendCode() {
