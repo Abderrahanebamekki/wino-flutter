@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:winop/screens/home_screen.dart';
 import 'package:winop/screens/scan_device_screen.dart';
 import 'package:winop/widgets/back_title_bar.dart';
 import 'package:winop/widgets/circle_logo.dart';
@@ -26,7 +27,10 @@ class _ChildInfoScreenState extends State<ChildInfoScreen> {
   }
 
   void _goToHome() {
-
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+    );
   }
 
   void _continue() {
