@@ -33,6 +33,7 @@ class _ChildInfoScreenState extends State<ChildInfoScreen> {
     );
   }
 
+
   void _continue() {
     Navigator.pushReplacement(
       context,
