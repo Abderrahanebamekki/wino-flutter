@@ -3,14 +3,17 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-Future<BitmapDescriptor> createNameMarker(String name) async {
+Future<BitmapDescriptor> createNameMarker(
+  String name, {
+  Color color = Colors.blue,
+}) async {
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
 
   const double width = 260;
   const double height = 90;
 
-  final markerPaint = Paint()..color = Colors.blue;
+  final markerPaint = Paint()..color = color;
 
   final shadowPaint = Paint()
     ..color = Colors.black.withValues(alpha: 0.25)

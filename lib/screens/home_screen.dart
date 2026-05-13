@@ -9,9 +9,9 @@ import '../models/child.dart';
 import '../models/child_gps.dart';
 import '../models/child_vitals.dart';
 import '../models/child_device.dart';
-
 import '../service/child_service.dart';
 import '../service/child_gps.dart';
+import '../service/safezone_service.dart';
 
 import '../widgets/child_marker.dart';
 import '../widgets/home_top_bar.dart';
@@ -47,6 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _errorMessage;
 
   Set<Marker> _markers = {};
+  Set<Circle> _circles = {};
+  Set<Marker> _safeZoneMarkers = {};
+  int? _selectedChildId;
 
   List<Child> _children = [];
 
@@ -264,6 +267,61 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     showChildDetailSheet(context, child, location, health, device);
+
+    _loadChildSafeZones(child);
+  }
+
+  Future<void> _loadChildSafeZones(Child child) async {
+    setState(() => _selectedChildId = child.id);
+
+    try {
+      final zones = await SafezoneService.getSafeZone(child.id);
+
+      if (!mounted || _selectedChildId != child.id) return;
+
+      final Set<Circle> circles = {};
+      final Set<Marker> markers = {};
+      const Color zoneColor = Colors.green;
+
+      for (final zone in zones) {
+        final position = LatLng(zone.latitude, zone.longitude);
+
+        circles.add(
+          Circle(
+            circleId: CircleId('sz_${zone.id}'),
+            center: position,
+            radius: zone.radius,
+            fillColor: zoneColor.withValues(alpha: 0.25),
+            strokeColor: zoneColor.withValues(alpha: 0.8),
+            strokeWidth: 3,
+            zIndex: 2,
+          ),
+        );
+
+        final icon = await createNameMarker(
+          zone.name,
+          color: Colors.green,
+        );
+
+        markers.add(
+          Marker(
+            markerId: MarkerId('sz_${zone.id}'),
+            position: position,
+            icon: icon,
+            anchor: const Offset(0.5, 1),
+          ),
+        );
+      }
+
+      if (!mounted || _selectedChildId != child.id) return;
+
+      setState(() {
+        _circles = circles;
+        _safeZoneMarkers = markers;
+      });
+    } catch (e) {
+      print('ERROR loading safe zones: $e');
+    }
   }
 
   @override
@@ -278,20 +336,6 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    if (_errorMessage != null) {
-      return Scaffold(
-        body: Center(
-          child: Padding(
-            padding: EdgeInsets.all(20),
-            child: Text(
-              'Error loading data. Check backend URL, JWT token, and endpoints.',
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       body: Stack(
         children: [
@@ -300,7 +344,8 @@ class _HomeScreenState extends State<HomeScreen> {
               target: LatLng(37.7749, -122.4194),
               zoom: 15,
             ),
-            markers: _markers,
+            markers: {..._markers, ..._safeZoneMarkers},
+            circles: _circles,
             onMapCreated: (controller) {
               _mapController = controller;
             },

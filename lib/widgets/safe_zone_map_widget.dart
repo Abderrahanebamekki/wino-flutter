@@ -1,0 +1,200 @@
+import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+import '../models/safe_zone.dart';
+import '../service/safezone_service.dart';
+import 'child_marker.dart';
+
+class SafeZoneMapWidget extends StatefulWidget {
+  final List<SafeZone>? safeZones;
+  final int? childId;
+  final LatLng? initialCenter;
+  final double initialZoom;
+  final double? height;
+  final bool showZoomControls;
+
+  const SafeZoneMapWidget({
+    super.key,
+    this.safeZones,
+    this.childId,
+    this.initialCenter,
+    this.initialZoom = 14,
+    this.height,
+    this.showZoomControls = false,
+  }) : assert(safeZones != null || childId != null,
+            'Either safeZones or childId must be provided');
+
+  @override
+  State<SafeZoneMapWidget> createState() => _SafeZoneMapWidgetState();
+}
+
+class _SafeZoneMapWidgetState extends State<SafeZoneMapWidget> {
+  GoogleMapController? _mapController;
+  Set<Marker> _markers = {};
+  Set<Circle> _circles = {};
+  List<SafeZone> _safeZones = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSafeZones();
+  }
+
+  @override
+  void didUpdateWidget(SafeZoneMapWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.safeZones != widget.safeZones ||
+        oldWidget.childId != widget.childId) {
+      _loadSafeZones();
+    }
+  }
+
+  Future<void> _loadSafeZones() async {
+    if (widget.safeZones != null) {
+      _safeZones = widget.safeZones!;
+      _isLoading = false;
+      _buildCircles();
+      _buildMarkers();
+      return;
+    }
+
+    if (widget.childId == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final zones = await SafezoneService.getSafeZone(widget.childId!);
+      if (!mounted) return;
+      _safeZones = zones;
+      _isLoading = false;
+      _buildCircles();
+      _buildMarkers();
+    } catch (e) {
+      if (!mounted) return;
+      _safeZones = [];
+      _isLoading = false;
+    }
+  }
+
+  void _buildCircles() {
+    final Set<Circle> circles = {};
+    const Color zoneColor = Colors.green;
+
+    for (final zone in _safeZones) {
+      final position = LatLng(zone.latitude, zone.longitude);
+
+      circles.add(
+        Circle(
+          circleId: CircleId('sz_${zone.id}'),
+          center: position,
+          radius: zone.radius,
+          fillColor: zoneColor.withValues(alpha: 0.25),
+          strokeColor: zoneColor.withValues(alpha: 0.8),
+          strokeWidth: 3,
+          zIndex: 2,
+        ),
+      );
+    }
+
+    if (!mounted) return;
+    setState(() => _circles = circles);
+  }
+
+  Future<void> _buildMarkers() async {
+    final Set<Marker> markers = {};
+
+    for (final zone in _safeZones) {
+      final icon = await createNameMarker(
+        zone.name,
+        color: Colors.green,
+      );
+      markers.add(
+        Marker(
+          markerId: MarkerId('sz_${zone.id}'),
+          position: LatLng(zone.latitude, zone.longitude),
+          icon: icon,
+          anchor: const Offset(0.5, 1),
+        ),
+      );
+    }
+
+    if (!mounted) return;
+    setState(() => _markers = markers);
+  }
+
+  void _fitAllZones() {
+    if (_safeZones.isEmpty || _mapController == null) return;
+
+    if (_safeZones.length == 1) {
+      final zone = _safeZones.first;
+      _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(zone.latitude, zone.longitude),
+          widget.initialZoom,
+        ),
+      );
+      return;
+    }
+
+    double minLat = double.infinity;
+    double maxLat = double.negativeInfinity;
+    double minLng = double.infinity;
+    double maxLng = double.negativeInfinity;
+
+    for (final zone in _safeZones) {
+      if (zone.latitude < minLat) minLat = zone.latitude;
+      if (zone.latitude > maxLat) maxLat = zone.latitude;
+      if (zone.longitude < minLng) minLng = zone.longitude;
+      if (zone.longitude > maxLng) maxLng = zone.longitude;
+    }
+
+    _mapController!.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(minLat, minLng),
+          northeast: LatLng(maxLat, maxLng),
+        ),
+        60,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final LatLng defaultCenter = widget.initialCenter ??
+        (_safeZones.isNotEmpty
+            ? LatLng(
+                _safeZones.first.latitude,
+                _safeZones.first.longitude,
+              )
+            : const LatLng(36.7525, 5.0843));
+
+    Widget map = GoogleMap(
+      initialCameraPosition: CameraPosition(
+        target: defaultCenter,
+        zoom: widget.initialZoom,
+      ),
+      markers: _markers,
+      circles: _circles,
+      onMapCreated: (controller) {
+        _mapController = controller;
+        _fitAllZones();
+      },
+      myLocationEnabled: false,
+      myLocationButtonEnabled: false,
+      zoomControlsEnabled: widget.showZoomControls,
+      mapToolbarEnabled: false,
+    );
+
+    if (widget.height != null) {
+      map = SizedBox(height: widget.height, child: map);
+    }
+
+    return map;
+  }
+}
