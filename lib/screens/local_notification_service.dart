@@ -23,11 +23,15 @@ class LocalNotificationService {
         ?.requestNotificationsPermission();
   }
 
-  static Future<void> showTestNotification() async {
+  static Future<void> showNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
     const androidDetails = AndroidNotificationDetails(
-      'test_channel',
-      'Test Notifications',
-      channelDescription: 'Test notification channel',
+      'alert_channel',
+      'Alert Notifications',
+      channelDescription: 'Notifications for alerts and updates',
       importance: Importance.max,
       priority: Priority.high,
     );
@@ -37,9 +41,9 @@ class LocalNotificationService {
     );
 
     await _notifications.show(
-      id: 1,
-      title: 'Speed Alert',
-      body: 'Liam is moving faster than expected.',
+      id: id,
+      title: title,
+      body: body,
       notificationDetails: notificationDetails,
     );
   }

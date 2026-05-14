@@ -7,10 +7,12 @@ import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 import '../models/child.dart';
 import '../models/child_gps.dart';
+import '../models/notification.dart';
 import '../models/child_vitals.dart';
 import '../models/child_device.dart';
 import '../service/child_service.dart';
 import '../service/child_gps.dart';
+import '../service/notification_service.dart';
 import '../service/safezone_service.dart';
 
 import '../widgets/child_marker.dart';
@@ -37,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _liveUpdateTimer;
 
   final Map<int, StreamSubscription<ChildGps>> _gpsSubscriptions = {};
+  StreamSubscription<NotificationM>? _notificationSubscription;
 
   static const double _bottomNavHeight = HomeBottomNav.height;
   static const double _panelBottomGap = 18;
@@ -72,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
       subscription.cancel();
     }
     _gpsSubscriptions.clear();
+    _notificationSubscription?.cancel();
 
     _mapController?.dispose();
     super.dispose();
@@ -122,6 +126,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
       await _loadMarkers();
       _startGpsStreams();
+      _startNotificationStream();
+
+      if (children.isNotEmpty) {
+        _loadChildSafeZones(children.first);
+      }
     } catch (e) {
       if (!mounted) return;
 
@@ -159,6 +168,21 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           );
     }
+  }
+
+  void _startNotificationStream() {
+    _notificationSubscription?.cancel();
+    _notificationSubscription =
+        AlertNotificationService.listenForAlerts().listen(
+          (notification) {
+            print(
+              'ALERT RECEIVED: ${notification.title}: ${notification.message}',
+            );
+          },
+          onError: (error) {
+            print('NOTIFICATION STREAM ERROR: $error');
+          },
+        );
   }
 
   void _startLiveUpdates() {
@@ -344,7 +368,15 @@ class _HomeScreenState extends State<HomeScreen> {
               target: LatLng(37.7749, -122.4194),
               zoom: 15,
             ),
-            markers: {..._markers, ..._safeZoneMarkers},
+            markers: {
+              if (_selectedChildId != null)
+                ..._markers.where(
+                  (m) => m.markerId.value == _selectedChildId.toString(),
+                )
+              else
+                ..._markers,
+              ..._safeZoneMarkers,
+            },
             circles: _circles,
             onMapCreated: (controller) {
               _mapController = controller;
