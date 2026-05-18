@@ -15,14 +15,9 @@ class HomeTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-          boxShadow: AppColors.softShadow,
-        ),
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
             _IconButton(icon: Icons.settings, onTap: onSettingsTap),
@@ -30,7 +25,7 @@ class HomeTopBar extends StatelessWidget {
               child: Center(
                 child: SvgPicture.asset(
                   'assets/images/logo.svg',
-                  height: 40,
+                  height: 36,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -54,12 +49,13 @@ class _IconButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+          boxShadow: AppColors.softShadow,
         ),
-        child: Icon(icon, color: Colors.grey[800], size: 24),
+        child: Icon(icon, color: Colors.grey[800], size: 22),
       ),
     );
   }

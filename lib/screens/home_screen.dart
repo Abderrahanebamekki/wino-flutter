@@ -438,9 +438,14 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Stack(
         children: [
           _buildBody(),
-          HomeTopBar(
-            onSettingsTap: _onSettingsTap,
-            onMessagesTap: _onMessagesTap,
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: HomeTopBar(
+              onSettingsTap: _onSettingsTap,
+              onMessagesTap: _onMessagesTap,
+            ),
           ),
           Align(
             alignment: Alignment.bottomCenter,
