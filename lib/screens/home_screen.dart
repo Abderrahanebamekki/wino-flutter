@@ -22,6 +22,9 @@ import '../widgets/home_top_bar.dart';
 import '../widgets/add_options_sheet.dart';
 import '../widgets/children_panel.dart';
 import '../widgets/home_bottom_nav.dart';
+import '../widgets/information_view.dart';
+import '../widgets/tracking_day_view.dart';
+import '../widgets/membership_view.dart';
 
 import 'notification_screen.dart';
 
@@ -33,7 +36,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 2;
 
   final PanelController _panelController = PanelController();
   GoogleMapController? _mapController;
@@ -256,10 +259,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onNavItemTapped(int index) {
-    setState(() => _selectedIndex = index);
-    if (index == 1) {
+    if (index == 4) {
       showAddOptionsSheet(context);
+      return;
     }
+    setState(() => _selectedIndex = index);
   }
 
   void _onSettingsTap() {}
@@ -336,10 +340,94 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBody() {
+    switch (_selectedIndex) {
+      case 0:
+        return const MembershipView();
+      case 1:
+        return TrackingDayView(
+          children: _children,
+          locations: _locations,
+          health: _health,
+          devices: _devices,
+        );
+      case 3:
+        return InformationView(
+          children: _children,
+          health: _health,
+          devices: _devices,
+          locations: _locations,
+        );
+      case 2:
+      default:
+        return _buildLocationView();
+    }
+  }
+
+  Widget _buildLocationView() {
     final screenHeight = MediaQuery.of(context).size.height;
 
+    return Stack(
+      children: [
+        GoogleMap(
+          initialCameraPosition: const CameraPosition(
+            target: LatLng(37.7749, -122.4194),
+            zoom: 15,
+          ),
+          markers: {
+            if (_selectedChildId != null)
+              ..._markers.where(
+                (m) => m.markerId.value == _selectedChildId.toString(),
+              )
+            else
+              ..._markers,
+            ..._safeZoneMarkers,
+          },
+          circles: _circles,
+          onMapCreated: (controller) => _mapController = controller,
+          myLocationEnabled: false,
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+        ),
+        SlidingUpPanel(
+          controller: _panelController,
+          minHeight: 76,
+          maxHeight: screenHeight * 0.55,
+          margin: const EdgeInsets.only(
+            left: 14,
+            right: 14,
+            bottom: _bottomNavHeight + _panelBottomGap,
+          ),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppColors.radiusPanel),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 18,
+              offset: const Offset(0, -4),
+            ),
+          ],
+          color: AppColors.surface,
+          panelBuilder: (scrollController) {
+            return ChildrenPanel(
+              scrollController: scrollController,
+              panelController: _panelController,
+              children: _children,
+              locations: _locations,
+              onToggle: _toggleChildrenPanel,
+              onChildTap: _showChildLocation,
+            );
+          },
+          body: const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -349,62 +437,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          GoogleMap(
-            initialCameraPosition: const CameraPosition(
-              target: LatLng(37.7749, -122.4194),
-              zoom: 15,
-            ),
-            markers: {
-              if (_selectedChildId != null)
-                ..._markers.where(
-                  (m) => m.markerId.value == _selectedChildId.toString(),
-                )
-              else
-                ..._markers,
-              ..._safeZoneMarkers,
-            },
-            circles: _circles,
-            onMapCreated: (controller) => _mapController = controller,
-            myLocationEnabled: false,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-            mapToolbarEnabled: false,
-          ),
+          _buildBody(),
           HomeTopBar(
             onSettingsTap: _onSettingsTap,
             onMessagesTap: _onMessagesTap,
-          ),
-          SlidingUpPanel(
-            controller: _panelController,
-            minHeight: 76,
-            maxHeight: screenHeight * 0.55,
-            margin: const EdgeInsets.only(
-              left: 14,
-              right: 14,
-              bottom: _bottomNavHeight + _panelBottomGap,
-            ),
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppColors.radiusPanel),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 18,
-                offset: const Offset(0, -4),
-              ),
-            ],
-            color: AppColors.surface,
-            panelBuilder: (scrollController) {
-              return ChildrenPanel(
-                scrollController: scrollController,
-                panelController: _panelController,
-                children: _children,
-                locations: _locations,
-                onToggle: _toggleChildrenPanel,
-                onChildTap: _showChildLocation,
-              );
-            },
-            body: const SizedBox.shrink(),
           ),
           Align(
             alignment: Alignment.bottomCenter,

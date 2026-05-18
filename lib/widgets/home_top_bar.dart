@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../theme/app_colors.dart';
 
 class HomeTopBar extends StatelessWidget {
@@ -14,31 +15,49 @@ class HomeTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+          boxShadow: AppColors.softShadow,
+        ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildIconButton(icon: Icons.settings, onTap: onSettingsTap),
-            _buildIconButton(icon: Icons.message, onTap: onMessagesTap),
+            _IconButton(icon: Icons.settings, onTap: onSettingsTap),
+            Expanded(
+              child: Center(
+                child: SvgPicture.asset(
+                  'assets/images/logo.svg',
+                  height: 40,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            _IconButton(icon: Icons.message, onTap: onMessagesTap),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildIconButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
+class _IconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _IconButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.background,
           borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-          boxShadow: AppColors.softShadow,
         ),
         child: Icon(icon, color: Colors.grey[800], size: 24),
       ),
