@@ -11,6 +11,7 @@ import '../models/child_gps.dart';
 import '../models/notification.dart';
 import '../models/child_vitals.dart';
 import '../models/child_device.dart';
+import '../models/safe_zone.dart';
 import '../service/child_service.dart';
 import '../service/child_gps.dart';
 import '../service/notification_service.dart';
@@ -19,7 +20,6 @@ import '../service/safezone_service.dart';
 import '../widgets/child_marker.dart';
 import '../widgets/home_top_bar.dart';
 import '../widgets/add_options_sheet.dart';
-import '../widgets/child_detail_sheet.dart';
 import '../widgets/children_panel.dart';
 import '../widgets/home_bottom_nav.dart';
 
@@ -60,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final Map<int, ChildGps> _locations = {};
   final Map<int, ChildHealth> _health = {};
   final Map<int, ChildDevice> _devices = {};
+  final Map<int, List<SafeZone>> _childSafeZones = {};
 
   @override
   void initState() {
@@ -154,7 +155,18 @@ class _HomeScreenState extends State<HomeScreen> {
     _notificationSubscription =
         AlertNotificationService.listenForAlerts().listen(
       (notification) {
-        print('ALERT RECEIVED: ${notification.title}: ${notification.message}');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${notification.title}: ${notification.message}'),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'View',
+              onPressed: _onMessagesTap,
+            ),
+          ),
+        );
       },
       onError: (error) => print('NOTIFICATION STREAM ERROR: $error'),
     );
@@ -190,7 +202,13 @@ class _HomeScreenState extends State<HomeScreen> {
     for (final child in _children) {
       final location = _locations[child.id];
       if (location == null) continue;
-      final icon = await createNameMarker(child.fullName);
+
+      final zones = _childSafeZones[child.id] ?? [];
+      final insideZone = _findContainingZone(location, zones);
+      final label = insideZone != null ? '${child.fullName}\n@ ${insideZone.name}' : child.fullName;
+      final maxLines = insideZone != null ? 2 : 1;
+
+      final icon = await createNameMarker(label, maxLines: maxLines);
       loadedMarkers.add(
         Marker(
           markerId: MarkerId(child.id.toString()),
@@ -203,6 +221,30 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (!mounted) return;
     setState(() => _markers = loadedMarkers);
+  }
+
+  SafeZone? _findContainingZone(ChildGps location, List<SafeZone> zones) {
+    for (final zone in zones) {
+      final distance = _distanceInMeters(
+        location.latitude, location.longitude,
+        zone.latitude, zone.longitude,
+      );
+      if (distance <= zone.radius) return zone;
+    }
+    return null;
+  }
+
+  double _distanceInMeters(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371000;
+    final double dLat = _toRadians(lat2 - lat1);
+    final double dLon = _toRadians(lon2 - lon1);
+    final double a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_toRadians(lat1)) * cos(_toRadians(lat2)) * sin(dLon / 2) * sin(dLon / 2);
+    return earthRadius * 2 * atan2(sqrt(a), sqrt(1 - a));
+  }
+
+  double _toRadians(double degree) {
+    return degree * pi / 180;
   }
 
   void _toggleChildrenPanel() {
@@ -231,9 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _showChildLocation(Child child) {
     final location = _locations[child.id];
-    final health = _health[child.id];
-    final device = _devices[child.id];
-    if (location == null || health == null || device == null) return;
+    if (location == null) return;
 
     _mapController?.animateCamera(
       CameraUpdate.newLatLngZoom(
@@ -242,7 +282,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
 
-    showChildDetailSheet(context, child, location, health, device);
     _loadChildSafeZones(child);
   }
 
@@ -252,6 +291,8 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final zones = await SafezoneService.getSafeZone(child.id);
       if (!mounted || _selectedChildId != child.id) return;
+
+      _childSafeZones[child.id] = zones;
 
       final Set<Circle> circles = {};
       final Set<Marker> markers = {};
@@ -288,6 +329,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _circles = circles;
         _safeZoneMarkers = markers;
       });
+
+      await _loadMarkers();
     } catch (e) {
       print('ERROR loading safe zones: $e');
     }

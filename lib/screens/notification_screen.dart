@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../models/notification.dart';
 import '../models/notification_category.dart';
+import '../service/notification_messages.dart';
 
 
 class NotificationsScreen extends StatefulWidget {
@@ -16,29 +17,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   final List<NotificationM> _notifications = [
     NotificationM(
-      title: 'Location Update',
-      message: 'Emma arrived safely at school.',
+      title: 'Safe Zone',
+      message: NotificationMessages.safezoneEnter('hala baset', 'school'),
       category: NotificationCategory.update,
       time: DateTime.now().subtract(const Duration(minutes: 10)),
     ),
     NotificationM(
       title: 'Speed Alert',
-      message: 'Liam is moving faster than expected.',
+      message: NotificationMessages.abnormalSpeed('hala baset', 9),
       category: NotificationCategory.alert,
       time: DateTime.now().subtract(const Duration(minutes: 25)),
+    ),
+    NotificationM(
+      title: 'Safe Zone',
+      message: NotificationMessages.safezoneExit('hala baset', 'school'),
+      category: NotificationCategory.update,
+      time: DateTime.now().subtract(const Duration(minutes: 40)),
     ),
     NotificationM(
       title: 'Invitation',
       message: 'You received a safezone invitation.',
       category: NotificationCategory.invitation,
       time: DateTime.now().subtract(const Duration(hours: 1)),
-    ),
-    NotificationM(
-      title: 'Battery Alert',
-      message: 'Olivia device battery is below 20%.',
-      category: NotificationCategory.alert,
-      time: DateTime.now().subtract(const Duration(hours: 2)),
-    ),
+    )
   ];
 
   List<NotificationM> get _filteredNotifications =>

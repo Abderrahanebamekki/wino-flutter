@@ -7,6 +7,7 @@ import '../models/notification.dart';
 import '../models/notification_category.dart';
 import '../screens/local_notification_service.dart';
 import 'auth_token_service.dart';
+import 'notification_messages.dart';
 
 class AlertNotificationService {
   static const String baseUrl = 'http://10.0.2.2:8081';
@@ -46,35 +47,64 @@ class AlertNotificationService {
         if (!line.startsWith('data:')) continue;
 
         final body = line.substring(5).trim();
-
         final json = jsonDecode(body);
 
-        final messageText = json['message'] as String? ?? '';
         final dateTimeStr = json['dateTime'] as String? ?? '';
         final typeStr = json['type'] as String? ?? 'UPDATE';
-
         final dateTime = DateTime.tryParse(dateTimeStr) ?? DateTime.now();
 
-        NotificationCategory category;
+        final childName = json['childName'] as String? ?? 'Unknown';
+        final safezoneName = json['safezoneName'] as String?;
+        final speed = (json['speed'] as num?)?.toDouble();
+
+        String message;
         String title;
+        NotificationCategory category;
 
         switch (typeStr.toUpperCase()) {
+          case 'SAFEZONE_ENTER':
+            title = 'Location Update';
+            category = NotificationCategory.update;
+            message = NotificationMessages.safezoneEnter(
+              childName,
+              safezoneName ?? 'Unknown',
+            );
+            break;
+          case 'SAFEZONE_EXIT':
+            title = 'Location Update';
+            category = NotificationCategory.update;
+            message = NotificationMessages.safezoneExit(
+              childName,
+              safezoneName ?? 'Unknown',
+            );
+            break;
+          case 'ABNORMAL_SPEED':
+            title = 'Speed Alert';
+            category = NotificationCategory.alert;
+            message = NotificationMessages.abnormalSpeed(
+              childName,
+              speed ?? 0,
+            );
+            break;
           case 'ALERT':
             category = NotificationCategory.alert;
             title = 'Alert';
+            message = json['message'] as String? ?? '';
             break;
           case 'INVITATION':
             category = NotificationCategory.invitation;
             title = 'Invitation';
+            message = json['message'] as String? ?? '';
             break;
           default:
             category = NotificationCategory.update;
             title = 'Update';
+            message = json['message'] as String? ?? '';
         }
 
         final notification = NotificationM(
           title: title,
-          message: messageText,
+          message: message,
           category: category,
           time: dateTime,
         );
@@ -83,7 +113,7 @@ class AlertNotificationService {
         await LocalNotificationService.showNotification(
           id: _notificationId,
           title: title,
-          body: messageText,
+          body: message,
         );
 
         yield notification;

@@ -6,12 +6,14 @@ import '../theme/app_colors.dart';
 Future<BitmapDescriptor> createNameMarker(
   String name, {
   Color color = AppColors.info,
+  int maxLines = 1,
 }) async {
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
 
   const double width = 260;
-  const double height = 90;
+  final double height = maxLines > 1 ? 120 : 90;
+  final double fontSize = maxLines > 1 ? 20 : 26;
 
   final markerPaint = Paint()..color = color;
   final shadowPaint = Paint()
@@ -19,7 +21,7 @@ Future<BitmapDescriptor> createNameMarker(
     ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
   final bubbleRect = RRect.fromRectAndRadius(
-    const Rect.fromLTWH(8, 8, width - 16, height - 28),
+    Rect.fromLTWH(8, 8, width - 16, height - 28),
     const Radius.circular(32),
   );
 
@@ -37,21 +39,21 @@ Future<BitmapDescriptor> createNameMarker(
 
   final textPainter = TextPainter(
     textDirection: TextDirection.ltr,
-    maxLines: 1,
+    maxLines: maxLines,
     ellipsis: '...',
     textAlign: TextAlign.center,
     text: TextSpan(
       text: name,
-      style: const TextStyle(
+      style: TextStyle(
         color: Colors.white,
-        fontSize: 26,
+        fontSize: fontSize,
         fontWeight: FontWeight.bold,
       ),
     ),
   );
 
   textPainter.layout(maxWidth: width - 32);
-  textPainter.paint(canvas, Offset((width - textPainter.width) / 2, 24));
+  textPainter.paint(canvas, Offset((width - textPainter.width) / 2, maxLines > 1 ? 18 : 24));
 
   final picture = recorder.endRecording();
   final image = await picture.toImage(width.toInt(), height.toInt());
