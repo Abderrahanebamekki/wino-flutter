@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:winop/screens/home_screen.dart';
 import 'package:winop/screens/scan_device_screen.dart';
-import 'package:winop/widgets/back_title_bar.dart';
-import 'package:winop/widgets/circle_logo.dart';
-import 'package:winop/widgets/custom_button.dart';
-import 'package:winop/widgets/custom_text_field.dart';
+import '../theme/app_colors.dart';
+import '../widgets/back_title_bar.dart';
+import '../widgets/app_card.dart';
+import '../widgets/circle_logo.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_text_field.dart';
 
 class ChildInfoScreen extends StatefulWidget {
   const ChildInfoScreen({super.key});
@@ -33,7 +35,6 @@ class _ChildInfoScreenState extends State<ChildInfoScreen> {
     );
   }
 
-
   void _continue() {
     Navigator.pushReplacement(
       context,
@@ -44,65 +45,38 @@ class _ChildInfoScreenState extends State<ChildInfoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-
+      backgroundColor: AppColors.background,
       appBar: BackTitleBar(
         title: 'Child Details',
         onTap: () => Navigator.pop(context),
       ),
-
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          padding: AppColors.screenPadding,
           child: Column(
             children: [
               const SizedBox(height: 10),
-
-              const CircleLogo(
-                path: 'assets/images/person.svg',
-                size: 140,
-              ),
-
+              const CircleLogo(path: 'assets/images/person.svg', size: 140),
               const SizedBox(height: 20),
-
               const Text(
                 'Add Your Child Information',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF012F39),
+                  color: AppColors.primaryAlt,
                 ),
               ),
-
               const SizedBox(height: 10),
-
               const Text(
                 'You can skip this step and add it later.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                ),
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
-
               const SizedBox(height: 30),
-
-              Container(
-                width: double.infinity,
+              AppCard(
                 padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFEAEAEA)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
+                borderColor: AppColors.cardBorderAlt,
                 child: Column(
                   children: [
                     CustomTextField(
@@ -111,14 +85,12 @@ class _ChildInfoScreenState extends State<ChildInfoScreen> {
                       controller: firstNameController,
                     ),
                     const SizedBox(height: 16),
-
                     CustomTextField(
                       label: 'Last Name',
                       hint: 'Enter child last name',
                       controller: lastNameController,
                     ),
                     const SizedBox(height: 16),
-
                     CustomTextField(
                       label: 'Age',
                       hint: 'Enter age',
@@ -128,32 +100,27 @@ class _ChildInfoScreenState extends State<ChildInfoScreen> {
                   ],
                 ),
               ),
-
               const Spacer(),
-
               FractionallySizedBox(
                 widthFactor: 0.85,
                 child: CustomButton(
                   text: 'Continue',
-                  backgroundColor: const Color(0xFF012F39),
+                  backgroundColor: AppColors.primaryAlt,
                   textColor: Colors.white,
                   onPressed: _continue,
                 ),
               ),
-
               const SizedBox(height: 12),
-
               TextButton(
                 onPressed: _goToHome,
                 child: const Text(
                   'Skip for now',
                   style: TextStyle(
-                    color: Color(0xFF012F39),
+                    color: AppColors.primaryAlt,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-
               const SizedBox(height: 10),
             ],
           ),

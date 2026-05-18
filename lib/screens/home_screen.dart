@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
+import '../theme/app_colors.dart';
 import '../models/child.dart';
 import '../models/child_gps.dart';
 import '../models/notification.dart';
@@ -70,13 +71,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _liveUpdateTimer?.cancel();
-
     for (final subscription in _gpsSubscriptions.values) {
       subscription.cancel();
     }
     _gpsSubscriptions.clear();
     _notificationSubscription?.cancel();
-
     _mapController?.dispose();
     super.dispose();
   }
@@ -91,15 +90,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
       for (final child in children) {
         final location = await ChildLocationService.getLocation(child.id);
-
         loadedLocations[child.id] = location;
-
         fakeHealth[child.id] = ChildHealth(
           childId: child.id,
           heartBeat: 88,
           oxygenLevel: 98,
         );
-
         fakeDevices[child.id] = ChildDevice(
           childId: child.id,
           batteryLevel: 80,
@@ -110,16 +106,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
       setState(() {
         _children = children;
-
         _locations.clear();
         _locations.addAll(loadedLocations);
-
         _health.clear();
         _health.addAll(fakeHealth);
-
         _devices.clear();
         _devices.addAll(fakeDevices);
-
         _isLoading = false;
         _errorMessage = null;
       });
@@ -133,7 +125,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-
       setState(() {
         _isLoading = false;
         _errorMessage = e.toString();
@@ -144,29 +135,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void _startGpsStreams() {
     for (final child in _children) {
       _gpsSubscriptions[child.id]?.cancel();
-
       _gpsSubscriptions[child.id] =
           ChildLocationService.listenLocation(child.id).listen(
-            (gps) async {
-              if (!mounted) return;
-
-              setState(() {
-                _locations[child.id] = gps;
-              });
-
-              await _loadMarkers();
-
-              print(
-                'HOME GPS UPDATE child=${child.id}, lat=${gps.latitude}, lng=${gps.longitude}, speed=${gps.speed}',
-              );
-            },
-            onError: (error) {
-              print('GPS STREAM ERROR child ${child.id}: $error');
-            },
-            onDone: () {
-              print('GPS STREAM DONE child ${child.id}');
-            },
-          );
+        (gps) async {
+          if (!mounted) return;
+          setState(() => _locations[child.id] = gps);
+          await _loadMarkers();
+        },
+        onError: (error) =>
+            print('GPS STREAM ERROR child ${child.id}: $error'),
+        onDone: () => print('GPS STREAM DONE child ${child.id}'),
+      );
     }
   }
 
@@ -174,15 +153,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _notificationSubscription?.cancel();
     _notificationSubscription =
         AlertNotificationService.listenForAlerts().listen(
-          (notification) {
-            print(
-              'ALERT RECEIVED: ${notification.title}: ${notification.message}',
-            );
-          },
-          onError: (error) {
-            print('NOTIFICATION STREAM ERROR: $error');
-          },
-        );
+      (notification) {
+        print('ALERT RECEIVED: ${notification.title}: ${notification.message}');
+      },
+      onError: (error) => print('NOTIFICATION STREAM ERROR: $error'),
+    );
   }
 
   void _startLiveUpdates() {
@@ -190,20 +165,16 @@ class _HomeScreenState extends State<HomeScreen> {
       const Duration(seconds: 3),
       (timer) {
         if (!mounted) return;
-
         setState(() {
           for (final child in _children) {
             final health = _health[child.id];
             final device = _devices[child.id];
-
             if (health != null) {
               health.heartBeat =
                   (health.heartBeat + _random.nextInt(7) - 3).clamp(60, 140);
-
               health.oxygenLevel =
                   (health.oxygenLevel + _random.nextInt(3) - 1).clamp(90, 100);
             }
-
             if (device != null) {
               device.batteryLevel =
                   (device.batteryLevel - _random.nextInt(2)).clamp(0, 100);
@@ -216,33 +187,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadMarkers() async {
     final Set<Marker> loadedMarkers = {};
-
     for (final child in _children) {
       final location = _locations[child.id];
-
       if (location == null) continue;
-
       final icon = await createNameMarker(child.fullName);
-
       loadedMarkers.add(
         Marker(
           markerId: MarkerId(child.id.toString()),
-          position: LatLng(
-            location.latitude,
-            location.longitude,
-          ),
+          position: LatLng(location.latitude, location.longitude),
           icon: icon,
           anchor: const Offset(0.5, 1),
           onTap: () => _showChildLocation(child),
         ),
       );
     }
-
     if (!mounted) return;
-
-    setState(() {
-      _markers = loadedMarkers;
-    });
+    setState(() => _markers = loadedMarkers);
   }
 
   void _toggleChildrenPanel() {
@@ -254,10 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onNavItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
+    setState(() => _selectedIndex = index);
     if (index == 1) {
       showAddOptionsSheet(context);
     }
@@ -268,9 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onMessagesTap() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const NotificationsScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const NotificationsScreen()),
     );
   }
 
@@ -278,10 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final location = _locations[child.id];
     final health = _health[child.id];
     final device = _devices[child.id];
-
-    if (location == null || health == null || device == null) {
-      return;
-    }
+    if (location == null || health == null || device == null) return;
 
     _mapController?.animateCamera(
       CameraUpdate.newLatLngZoom(
@@ -291,7 +243,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     showChildDetailSheet(context, child, location, health, device);
-
     _loadChildSafeZones(child);
   }
 
@@ -300,16 +251,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final zones = await SafezoneService.getSafeZone(child.id);
-
       if (!mounted || _selectedChildId != child.id) return;
 
       final Set<Circle> circles = {};
       final Set<Marker> markers = {};
-      const Color zoneColor = Colors.green;
+      const Color zoneColor = AppColors.success;
 
       for (final zone in zones) {
         final position = LatLng(zone.latitude, zone.longitude);
-
         circles.add(
           Circle(
             circleId: CircleId('sz_${zone.id}'),
@@ -322,11 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
 
-        final icon = await createNameMarker(
-          zone.name,
-          color: Colors.green,
-        );
-
+        final icon = await createNameMarker(zone.name, color: zoneColor);
         markers.add(
           Marker(
             markerId: MarkerId('sz_${zone.id}'),
@@ -354,9 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (_isLoading) {
       return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -378,9 +321,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ..._safeZoneMarkers,
             },
             circles: _circles,
-            onMapCreated: (controller) {
-              _mapController = controller;
-            },
+            onMapCreated: (controller) => _mapController = controller,
             myLocationEnabled: false,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
@@ -400,7 +341,7 @@ class _HomeScreenState extends State<HomeScreen> {
               bottom: _bottomNavHeight + _panelBottomGap,
             ),
             borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
+              top: Radius.circular(AppColors.radiusPanel),
             ),
             boxShadow: [
               BoxShadow(
@@ -409,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 offset: const Offset(0, -4),
               ),
             ],
-            color: Colors.white,
+            color: AppColors.surface,
             panelBuilder: (scrollController) {
               return ChildrenPanel(
                 scrollController: scrollController,

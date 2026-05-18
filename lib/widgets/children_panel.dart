@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
-
+import '../theme/app_colors.dart';
 import '../models/child.dart';
 import '../models/child_gps.dart';
 
@@ -28,13 +28,8 @@ class ChildrenPanel extends StatelessWidget {
       children: [
         _PanelHandle(onToggle: onToggle),
         const SizedBox(height: 8),
-        _PanelHeader(
-          childrenCount: children.length,
-          onToggle: onToggle,
-        ),
-        Expanded(
-          child: _buildChildrenList(),
-        ),
+        _PanelHeader(childrenCount: children.length, onToggle: onToggle),
+        Expanded(child: _buildChildrenList()),
       ],
     );
   }
@@ -44,10 +39,7 @@ class ChildrenPanel extends StatelessWidget {
       controller: scrollController,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       itemCount: children.length,
-      itemBuilder: (context, index) {
-        final child = children[index];
-        return _buildChildItem(child);
-      },
+      itemBuilder: (context, index) => _buildChildItem(children[index]),
     );
   }
 
@@ -57,21 +49,17 @@ class ChildrenPanel extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
-      color: Colors.grey[50],
+      color: AppColors.background,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: Colors.grey.withValues(alpha: 0.15),
-        ),
+        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+        side: BorderSide(color: Colors.grey.withValues(alpha: 0.15)),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 8,
-        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         leading: CircleAvatar(
           radius: 24,
-          backgroundColor: Colors.blue,
+          backgroundColor: AppColors.info,
           child: Text(
             child.initials,
             style: const TextStyle(
@@ -91,15 +79,12 @@ class ChildrenPanel extends StatelessWidget {
           padding: const EdgeInsets.only(top: 4),
           child: Text(
             '${child.age} years old',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 13,
-            ),
+            style: TextStyle(color: Colors.grey[600], fontSize: 13),
           ),
         ),
         trailing: CircleAvatar(
           radius: 25,
-          backgroundColor: Colors.blue,
+          backgroundColor: AppColors.info,
           child: Text(
             location == null
                 ? '--'
@@ -120,7 +105,6 @@ class ChildrenPanel extends StatelessWidget {
 
 class _PanelHandle extends StatelessWidget {
   final VoidCallback onToggle;
-
   const _PanelHandle({required this.onToggle});
 
   @override
@@ -143,7 +127,6 @@ class _PanelHandle extends StatelessWidget {
 class _PanelHeader extends StatelessWidget {
   final int childrenCount;
   final VoidCallback onToggle;
-
   const _PanelHeader({
     required this.childrenCount,
     required this.onToggle,
@@ -169,18 +152,16 @@ class _PanelHeader extends StatelessWidget {
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
+                  color: AppColors.info.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   '$childrenCount active',
                   style: const TextStyle(
-                    color: Colors.blue,
+                    color: AppColors.info,
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
                   ),

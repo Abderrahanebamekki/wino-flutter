@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 class HomeTopBar extends StatelessWidget {
   final VoidCallback onSettingsTap;
@@ -35,15 +36,9 @@ class HomeTopBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+          boxShadow: AppColors.softShadow,
         ),
         child: Icon(icon, color: Colors.grey[800], size: 24),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 class CustomTextField extends StatefulWidget {
   final String label;
@@ -43,6 +44,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 6),
@@ -54,22 +56,36 @@ class _CustomTextFieldState extends State<CustomTextField> {
           decoration: InputDecoration(
             hintText: widget.hint,
             errorText: widget.errorText,
+            filled: true,
+            fillColor: AppColors.surface,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+              borderSide: const BorderSide(color: AppColors.cardBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+              borderSide:
+                  const BorderSide(color: AppColors.primaryDark, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+              borderSide: const BorderSide(color: AppColors.error),
             ),
             suffixIcon: widget.isPassword
                 ? IconButton(
-              onPressed: () {
-                setState(() {
-                  _obscureText = !_obscureText;
-                });
-              },
-              icon: Icon(
-                _obscureText
-                    ? Icons.visibility_off
-                    : Icons.visibility,
-              ),
-            )
+                    onPressed: () =>
+                        setState(() => _obscureText = !_obscureText),
+                    icon: Icon(
+                      _obscureText
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: AppColors.textHint,
+                    ),
+                  )
                 : null,
           ),
         ),

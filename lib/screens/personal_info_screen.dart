@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:winop/screens/child_screen.dart';
-import 'package:winop/widgets/circle_logo.dart';
-import 'package:winop/widgets/custom_button.dart';
-import 'package:winop/widgets/custom_text_field.dart';
-
+import '../theme/app_colors.dart';
 import '../widgets/back_title_bar.dart';
+import '../widgets/app_card.dart';
+import '../widgets/circle_logo.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_text_field.dart';
 
 class PersonalInfoScreen extends StatefulWidget {
   const PersonalInfoScreen({super.key});
@@ -27,7 +28,6 @@ class PersonalInfoScreenState extends State<PersonalInfoScreen> {
   }
 
   void _goToChildInfoScreen() {
-    print('Navigate to child info screen');
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const ChildInfoScreen()),
@@ -37,65 +37,40 @@ class PersonalInfoScreenState extends State<PersonalInfoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: BackTitleBar(
         title: 'Personal Info',
         onTap: () => Navigator.pop(context),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          padding: AppColors.screenPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 10),
-
-              const CircleLogo(
-                path: 'assets/images/person.svg',
-                size: 160,
-              ),
-
+              const CircleLogo(path: 'assets/images/person.svg', size: 160),
               const SizedBox(height: 28),
-
               const Text(
                 'Complete Your Personal Information',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF012F39),
+                  color: AppColors.primaryAlt,
                   height: 1.2,
                 ),
               ),
-
               const SizedBox(height: 10),
-
               const Text(
-                'Let’s get to know you before we continue.',
+                'Let\u2019s get to know you before we continue.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                ),
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
-
               const SizedBox(height: 28),
-
-              Container(
-                width: double.infinity,
+              AppCard(
                 padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFEAEAEA)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
+                borderColor: AppColors.cardBorderAlt,
                 child: Column(
                   children: [
                     CustomTextField(
@@ -119,14 +94,12 @@ class PersonalInfoScreenState extends State<PersonalInfoScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 28),
-
               FractionallySizedBox(
                 widthFactor: 0.85,
                 child: CustomButton(
                   text: 'Continue to Child Details',
-                  backgroundColor: const Color(0xFF012F39),
+                  backgroundColor: AppColors.primaryAlt,
                   textColor: Colors.white,
                   onPressed: _goToChildInfoScreen,
                 ),

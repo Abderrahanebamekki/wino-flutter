@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 class HomeBottomNav extends StatelessWidget {
   final int selectedIndex;
@@ -21,7 +22,7 @@ class HomeBottomNav extends StatelessWidget {
         margin: const EdgeInsets.fromLTRB(14, 0, 14, 10),
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(26),
           boxShadow: [
             BoxShadow(
@@ -72,19 +73,17 @@ class HomeBottomNav extends StatelessWidget {
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 6,
-              ),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? Colors.blue.withValues(alpha: 0.12)
+                    ? AppColors.primaryDark.withValues(alpha: 0.12)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(
                 icon,
-                color: isSelected ? Colors.blue : Colors.grey,
+                color: isSelected ? AppColors.primaryDark : Colors.grey,
                 size: 27,
               ),
             ),
@@ -94,9 +93,10 @@ class HomeBottomNav extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: isSelected ? Colors.blue : Colors.grey,
+                color: isSelected ? AppColors.primaryDark : Colors.grey,
                 fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                fontWeight:
+                    isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
           ],

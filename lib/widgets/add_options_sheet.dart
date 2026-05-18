@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../theme/app_colors.dart';
 import '../screens/add_child_screen.dart';
 import '../screens/safezone_screen.dart';
 
@@ -13,8 +13,8 @@ void showAddOptionsSheet(BuildContext context) {
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(26),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppColors.radiusPanel),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.18),
@@ -29,7 +29,7 @@ void showAddOptionsSheet(BuildContext context) {
                 child: _AddOption(
                   icon: Icons.shield,
                   title: 'Safezone',
-                  color: Colors.green,
+                  color: AppColors.success,
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(
@@ -46,7 +46,7 @@ void showAddOptionsSheet(BuildContext context) {
                 child: _AddOption(
                   icon: Icons.child_care,
                   title: 'Child',
-                  color: Colors.blue,
+                  color: AppColors.info,
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(
@@ -88,9 +88,7 @@ class _AddOption extends StatelessWidget {
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: color.withValues(alpha: 0.3),
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

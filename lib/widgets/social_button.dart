@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../theme/app_colors.dart';
 
 class SocialButton extends StatelessWidget {
   final String text;
@@ -21,22 +22,18 @@ class SocialButton extends StatelessWidget {
         height: 52,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.surface,
             elevation: 0,
-            side: const BorderSide(color: Color(0xFFD9D9D9)),
+            side: const BorderSide(color: AppColors.divider),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppColors.radiusLarge),
             ),
           ),
           onPressed: onPressed,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SvgPicture.asset(
-                iconPath,
-                width: 22,
-                height: 22,
-              ),
+              SvgPicture.asset(iconPath, width: 22, height: 22),
               const SizedBox(width: 10),
               Text(
                 text,

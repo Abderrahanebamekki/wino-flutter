@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
+import '../theme/app_colors.dart';
 import '../models/safe_zone.dart';
 import '../service/safezone_service.dart';
 import 'child_marker.dart';
@@ -58,11 +58,9 @@ class _SafeZoneMapWidgetState extends State<SafeZoneMapWidget> {
       _buildMarkers();
       return;
     }
-
     if (widget.childId == null) return;
 
     setState(() => _isLoading = true);
-
     try {
       final zones = await SafezoneService.getSafeZone(widget.childId!);
       if (!mounted) return;
@@ -79,15 +77,12 @@ class _SafeZoneMapWidgetState extends State<SafeZoneMapWidget> {
 
   void _buildCircles() {
     final Set<Circle> circles = {};
-    const Color zoneColor = Colors.green;
-
+    const Color zoneColor = AppColors.success;
     for (final zone in _safeZones) {
-      final position = LatLng(zone.latitude, zone.longitude);
-
       circles.add(
         Circle(
           circleId: CircleId('sz_${zone.id}'),
-          center: position,
+          center: LatLng(zone.latitude, zone.longitude),
           radius: zone.radius,
           fillColor: zoneColor.withValues(alpha: 0.25),
           strokeColor: zoneColor.withValues(alpha: 0.8),
@@ -96,19 +91,15 @@ class _SafeZoneMapWidgetState extends State<SafeZoneMapWidget> {
         ),
       );
     }
-
     if (!mounted) return;
     setState(() => _circles = circles);
   }
 
   Future<void> _buildMarkers() async {
     final Set<Marker> markers = {};
-
     for (final zone in _safeZones) {
-      final icon = await createNameMarker(
-        zone.name,
-        color: Colors.green,
-      );
+      final icon =
+          await createNameMarker(zone.name, color: AppColors.success);
       markers.add(
         Marker(
           markerId: MarkerId('sz_${zone.id}'),
@@ -118,19 +109,16 @@ class _SafeZoneMapWidgetState extends State<SafeZoneMapWidget> {
         ),
       );
     }
-
     if (!mounted) return;
     setState(() => _markers = markers);
   }
 
   void _fitAllZones() {
     if (_safeZones.isEmpty || _mapController == null) return;
-
     if (_safeZones.length == 1) {
-      final zone = _safeZones.first;
       _mapController!.animateCamera(
         CameraUpdate.newLatLngZoom(
-          LatLng(zone.latitude, zone.longitude),
+          LatLng(_safeZones.first.latitude, _safeZones.first.longitude),
           widget.initialZoom,
         ),
       );

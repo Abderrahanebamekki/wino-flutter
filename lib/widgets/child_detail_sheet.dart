@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../theme/app_colors.dart';
 import '../models/child.dart';
 import '../models/child_gps.dart';
 import '../models/child_vitals.dart';
@@ -15,7 +15,7 @@ void showChildDetailSheet(
   showModalBottomSheet(
     context: context,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppColors.radiusPanel)),
     ),
     builder: (context) {
       return Padding(
@@ -25,7 +25,7 @@ void showChildDetailSheet(
           children: [
             CircleAvatar(
               radius: 36,
-              backgroundColor: Colors.blue,
+              backgroundColor: AppColors.info,
               child: Text(
                 child.initials,
                 style: const TextStyle(
@@ -41,29 +41,14 @@ void showChildDetailSheet(
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 16),
-            _infoRow(
-              Icons.favorite,
-              'Heart Beat',
-              '${health.heartBeat} BPM',
-            ),
-            _infoRow(
-              Icons.monitor_heart,
-              'Oxygen Level',
-              '${health.oxygenLevel}%',
-            ),
-            _infoRow(
-              Icons.battery_full,
-              'Battery Level',
-              '${device.batteryLevel}%',
-            ),
-            _infoRow(
-              Icons.speed,
-              'Speed',
-              '${location.speed.toStringAsFixed(1)} km/h',
-            ),
+            _infoRow(Icons.favorite, 'Heart Beat', '${health.heartBeat} BPM', AppColors.error),
+            _infoRow(Icons.monitor_heart, 'Oxygen Level', '${health.oxygenLevel}%', AppColors.info),
+            _infoRow(Icons.battery_full, 'Battery Level', '${device.batteryLevel}%', AppColors.success),
+            _infoRow(Icons.speed, 'Speed', '${location.speed.toStringAsFixed(1)} km/h', AppColors.warning),
           ],
         ),
       );
@@ -71,19 +56,19 @@ void showChildDetailSheet(
   );
 }
 
-Widget _infoRow(IconData icon, String label, String value) {
+Widget _infoRow(IconData icon, String label, String value, Color iconColor) {
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),
     child: Row(
       children: [
-        Icon(icon, color: Colors.blue),
+        Icon(icon, color: iconColor),
         const SizedBox(width: 12),
         Text(
           '$label:',
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         const Spacer(),
-        Text(value),
+        Text(value, style: const TextStyle(color: AppColors.textPrimary)),
       ],
     ),
   );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 class BackTitleBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -16,7 +17,7 @@ class BackTitleBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       elevation: 0,
       leading: IconButton(
         onPressed: onTap ?? () => Navigator.pop(context),

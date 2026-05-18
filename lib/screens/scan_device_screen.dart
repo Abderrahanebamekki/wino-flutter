@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_code_tools/qr_code_tools.dart';
+import '../theme/app_colors.dart';
 import '../widgets/back_title_bar.dart';
 
 class ScanDeviceScreen extends StatefulWidget {
@@ -34,24 +34,19 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
   }
 
   Future<void> _pickImageFromGallery() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
-      final ImagePicker picker = ImagePicker();
+      final picker = ImagePicker();
       final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-
       if (image != null) {
-        final String? qrData = await QrCodeToolsPlugin.decodeFrom(image.path);
+        final String? qrData =
+            await QrCodeToolsPlugin.decodeFrom(image.path);
         if (qrData != null && qrData.isNotEmpty) {
           setState(() {
             _scannedValue = qrData;
             _isScanning = false;
           });
-          if (mounted) {
-            _showResultDialog(qrData);
-          }
+          if (mounted) _showResultDialog(qrData);
         } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -67,9 +62,7 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
         );
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -91,26 +84,24 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+        ),
         title: const Text('QR Code Result'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Scanned Value:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            const Text('Scanned Value:',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(AppColors.radiusSmall),
               ),
-              child: SelectableText(
-                value,
-                style: const TextStyle(fontSize: 16),
-              ),
+              child: SelectableText(value, style: const TextStyle(fontSize: 16)),
             ),
           ],
         ),
@@ -125,7 +116,6 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // Handle the scanned value - navigate or process as needed
               _handleScannedValue(value);
             },
             child: const Text('Continue'),
@@ -136,8 +126,6 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
   }
 
   void _handleScannedValue(String value) {
-    // TODO: Implement what happens with the scanned value
-    // This could be navigating to another screen or processing the device ID
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Processing: $value')),
     );
@@ -154,6 +142,7 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: const BackTitleBar(title: 'Scan Device'),
       body: Column(
         children: [
@@ -172,7 +161,7 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
                           height: 250,
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: const Color(0xFF05424E),
+                              color: AppColors.primaryDark,
                               width: 3,
                             ),
                             borderRadius: BorderRadius.circular(12),
@@ -191,10 +180,7 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                             shadows: [
-                              Shadow(
-                                blurRadius: 10,
-                                color: Colors.black54,
-                              ),
+                              Shadow(blurRadius: 10, color: Colors.black54),
                             ],
                           ),
                         ),
@@ -208,7 +194,7 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
                         const Icon(
                           Icons.qr_code_rounded,
                           size: 80,
-                          color: Color(0xFF05424E),
+                          color: AppColors.primaryDark,
                         ),
                         const SizedBox(height: 16),
                         const Text(
@@ -216,16 +202,14 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF05424E),
+                            color: AppColors.primaryDark,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           _scannedValue ?? '',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
+                          style:
+                              const TextStyle(fontSize: 16, color: Colors.grey),
                         ),
                       ],
                     ),
@@ -234,7 +218,7 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               boxShadow: [
                 BoxShadow(
                   color: Colors.grey.withOpacity(0.3),
@@ -275,12 +259,12 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
   }) {
     return InkWell(
       onTap: onPressed,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppColors.radiusMedium),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF05424E) : Colors.grey[200],
-          borderRadius: BorderRadius.circular(12),
+          color: isActive ? AppColors.primaryDark : AppColors.background,
+          borderRadius: BorderRadius.circular(AppColors.radiusMedium),
         ),
         child: isLoading
             ? const SizedBox(
@@ -294,15 +278,14 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    icon,
-                    color: isActive ? Colors.white : const Color(0xFF05424E),
-                  ),
+                  Icon(icon,
+                      color:
+                          isActive ? Colors.white : AppColors.primaryDark),
                   const SizedBox(width: 8),
                   Text(
                     label,
                     style: TextStyle(
-                      color: isActive ? Colors.white : const Color(0xFF05424E),
+                      color: isActive ? Colors.white : AppColors.primaryDark,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

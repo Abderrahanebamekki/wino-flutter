@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -10,8 +11,8 @@ class CustomButton extends StatelessWidget {
     super.key,
     required this.text,
     required this.onPressed,
-    this.textColor = const Color(0xFF234A52),
-    this.backgroundColor = const Color(0xFF346A76)
+    this.textColor = AppColors.primaryLight,
+    this.backgroundColor = AppColors.primary,
   });
 
   @override
@@ -22,17 +23,15 @@ class CustomButton extends StatelessWidget {
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor,
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppColors.radiusSmall),
           ),
         ),
         onPressed: onPressed,
         child: Text(
           text,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 16,
-          ),
+          style: TextStyle(color: textColor, fontSize: 16),
         ),
       ),
     );
