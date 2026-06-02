@@ -3,6 +3,38 @@ import 'package:winop/models/safe_zone.dart';
 import 'api_service.dart';
 
 class SafezoneService {
+  static Future<void> createSafeZone({
+    required String name,
+    required double radius,
+    required double longitude,
+    required double latitude,
+    required int childId,
+  }) async {
+    try {
+      print('==============================');
+      print('START CREATE SAFE ZONE');
+
+      await ApiService.post(
+        '/geofencing/safezones/',
+        body: {
+          'name': name,
+          'radius': radius,
+          'longitude': longitude,
+          'latitude': latitude,
+          'childId': childId,
+        },
+      );
+
+      print('SAFE ZONE CREATED SUCCESSFULLY');
+      print('==============================');
+    } catch (e, stackTrace) {
+      print('ERROR IN createSafeZone()');
+      print(e);
+      print(stackTrace);
+      rethrow;
+    }
+  }
+
   static Future<List<SafeZone>> getSafeZone(int childId) async {
     try {
       print('==============================');

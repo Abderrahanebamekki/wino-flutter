@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_code_tools/qr_code_tools.dart';
+import '../service/device_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/back_title_bar.dart';
 
 class ScanDeviceScreen extends StatefulWidget {
-  const ScanDeviceScreen({super.key});
+  final int childId;
+
+  const ScanDeviceScreen({super.key, required this.childId});
 
   @override
   State<ScanDeviceScreen> createState() => _ScanDeviceScreenState();
@@ -17,6 +20,7 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
   String? _scannedValue;
   bool _isScanning = true;
   bool _isLoading = false;
+  bool _isLinking = false;
 
   @override
   void initState() {
@@ -46,6 +50,7 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
             _scannedValue = qrData;
             _isScanning = false;
           });
+          _scannerController?.stop();
           if (mounted) _showResultDialog(qrData);
         } else {
           if (mounted) {
@@ -125,10 +130,42 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
     );
   }
 
-  void _handleScannedValue(String value) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Processing: $value')),
-    );
+  Future<void> _handleScannedValue(String deviceId) async {
+    setState(() => _isLinking = true);
+
+    try {
+      await DeviceService.linkChildToDevice(
+        childId: widget.childId,
+        deviceId: deviceId,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Device linked to child successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error linking device: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+
+      setState(() {
+        _isLinking = false;
+        _isScanning = true;
+        _scannedValue = null;
+      });
+      _scannerController?.start();
+    }
   }
 
   void _resetScanner() {
@@ -144,109 +181,123 @@ class _ScanDeviceScreenState extends State<ScanDeviceScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const BackTitleBar(title: 'Scan Device'),
-      body: Column(
-        children: [
-          Expanded(
-            flex: 3,
-            child: _isScanning
-                ? Stack(
-                    children: [
-                      MobileScanner(
-                        controller: _scannerController!,
-                        onDetect: _onDetect,
-                      ),
-                      Center(
-                        child: Container(
-                          width: 250,
-                          height: 250,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: AppColors.primaryDark,
-                              width: 3,
+      body: _isLinking
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Linking device to child...',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: _isScanning
+                      ? Stack(
+                          children: [
+                            MobileScanner(
+                              controller: _scannerController!,
+                              onDetect: _onDetect,
                             ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      const Positioned(
-                        bottom: 20,
-                        left: 0,
-                        right: 0,
-                        child: Text(
-                          'Position QR code within the frame',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            shadows: [
-                              Shadow(blurRadius: 10, color: Colors.black54),
+                            Center(
+                              child: Container(
+                                width: 250,
+                                height: 250,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: AppColors.primaryDark,
+                                    width: 3,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                            const Positioned(
+                              bottom: 20,
+                              left: 0,
+                              right: 0,
+                              child: Text(
+                                'Position QR code within the frame',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  shadows: [
+                                    Shadow(blurRadius: 10, color: Colors.black54),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.qr_code_rounded,
+                                size: 80,
+                                color: AppColors.primaryDark,
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'QR Code Scanned!',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryDark,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _scannedValue ?? '',
+                                style: const TextStyle(
+                                    fontSize: 16, color: Colors.grey),
+                              ),
                             ],
                           ),
                         ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, -2),
                       ),
                     ],
-                  )
-                : Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.qr_code_rounded,
-                          size: 80,
-                          color: AppColors.primaryDark,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'QR Code Scanned!',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryDark,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _scannedValue ?? '',
-                          style:
-                              const TextStyle(fontSize: 16, color: Colors.grey),
-                        ),
-                      ],
-                    ),
                   ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildActionButton(
+                        icon: Icons.camera_alt,
+                        label: 'Camera',
+                        onPressed: _resetScanner,
+                        isActive: _isScanning,
+                      ),
+                      _buildActionButton(
+                        icon: Icons.photo_library,
+                        label: 'Gallery',
+                        onPressed: _isLoading ? () {} : _pickImageFromGallery,
+                        isLoading: _isLoading,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildActionButton(
-                  icon: Icons.camera_alt,
-                  label: 'Camera',
-                  onPressed: _resetScanner,
-                  isActive: _isScanning,
-                ),
-                _buildActionButton(
-                  icon: Icons.photo_library,
-                  label: 'Gallery',
-                  onPressed: _isLoading ? () {} : _pickImageFromGallery,
-                  isLoading: _isLoading,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 

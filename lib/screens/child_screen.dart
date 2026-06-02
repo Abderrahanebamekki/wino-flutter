@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:winop/screens/home_screen.dart';
 import 'package:winop/screens/scan_device_screen.dart';
+import 'package:winop/service/child_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/back_title_bar.dart';
 import '../widgets/app_card.dart';
@@ -35,11 +36,29 @@ class _ChildInfoScreenState extends State<ChildInfoScreen> {
     );
   }
 
-  void _continue() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const ScanDeviceScreen()),
-    );
+  Future<void> _continue() async {
+    try {
+      final child = await ChildService.addChild(
+        firstName: firstNameController.text.trim(),
+        lastName: lastNameController.text.trim(),
+        age: int.tryParse(ageController.text.trim()) ?? 0,
+      );
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ScanDeviceScreen(childId: child.id),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error adding child: $e')),
+      );
+    }
   }
 
   @override

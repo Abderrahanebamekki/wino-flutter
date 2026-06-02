@@ -15,8 +15,7 @@ Future<void> main() async {
   await LocalNotificationService.init();
 
   await AuthTokenService.saveToken(
-    'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjpbIlJPTEVfVVNFUiJdLCJzdWIiOiJhYmRlcnJhaG1hbmUuYmFtZWtraUB1bml2LWNvbnN0YW50aW5lMi5keiIsImlhdCI6MTc3ODU3ODk1OSwiZXhwIjoxNzg2MzU0OTU5fQ.6d-0NScwewuYAH6LvQgF6DYahvk4hsUOZTbGEzh-si4',
-  );
+'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjpbIlJPTEVfVVNFUiJdLCJzdWIiOiJhYmRlcnJhaG1hbmUuYmFtZWtraUB1bml2LWNvbnN0YW50aW5lMi5keiIsImlhdCI6MTc4MDM0NTU2MCwiZXhwIjoxNzg4MTIxNTYwfQ.hKIJ8bNJyMaoOkrdjykWsI9l4XFK-5cNG_hyiVuQU0g'  );
 
   runApp(const MyApp());
 }

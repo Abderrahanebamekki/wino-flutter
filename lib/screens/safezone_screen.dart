@@ -5,6 +5,8 @@ import 'package:file_picker/file_picker.dart';
 
 import '../models/child.dart';
 import '../service/child_service.dart';
+import '../service/safezone_service.dart';
+import 'home_screen.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 import '../widgets/custom_text_field.dart';
@@ -120,7 +122,7 @@ class _SafezoneScreenState extends State<SafezoneScreen>
     });
   }
 
-  void _addSafezone() {
+  Future<void> _addSafezone() async {
     if (_safezoneNameController.text.trim().isEmpty ||
         _selectedChild == null ||
         _latitude == null ||
@@ -131,16 +133,34 @@ class _SafezoneScreenState extends State<SafezoneScreen>
       return;
     }
 
-    final fileInfo = _uploadedFileName != null ? '\nFile: $_uploadedFileName' : '';
+    try {
+      await SafezoneService.createSafeZone(
+        name: _safezoneNameController.text.trim(),
+        radius: _radius,
+        longitude: _longitude!,
+        latitude: _latitude!,
+        childId: _selectedChild!.id,
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Safezone added for ${_selectedChild!.fullName}$fileInfo'),
-        backgroundColor: AppColors.success,
-      ),
-    );
-
-    Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Safezone added for ${_selectedChild!.fullName}'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to add safezone: $e')),
+        );
+      }
+    }
   }
 
   String _radiusLabel(double value) {

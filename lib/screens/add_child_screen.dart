@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../service/child_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_card.dart';
 import '../widgets/custom_text_field.dart';
+import 'scan_device_screen.dart';
 
 class AddChildScreen extends StatefulWidget {
   const AddChildScreen({super.key});
@@ -18,8 +20,9 @@ class _AddChildScreenState extends State<AddChildScreen> {
   String? _firstNameError;
   String? _lastNameError;
   String? _ageError;
+  bool _isLoading = false;
 
-  void _addChild() {
+  Future<void> _addChild() async {
     setState(() {
       _firstNameError = null;
       _lastNameError = null;
@@ -46,10 +49,36 @@ class _AddChildScreenState extends State<AddChildScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Child Added Successfully')),
-    );
-    Navigator.pop(context);
+    setState(() => _isLoading = true);
+
+    try {
+      final child = await ChildService.addChild(
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        age: int.parse(_ageController.text.trim()),
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Child Added Successfully')),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ScanDeviceScreen(childId: child.id),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error adding child: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -122,7 +151,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: _addChild,
+                  onPressed: _isLoading ? null : _addChild,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryDark,
                     foregroundColor: AppColors.surface,
@@ -130,10 +159,19 @@ class _AddChildScreenState extends State<AddChildScreen> {
                       borderRadius: BorderRadius.circular(AppColors.radiusLarge),
                     ),
                   ),
-                  child: const Text(
-                    'Add Child',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Add Child',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                 ),
               ),
             ],
