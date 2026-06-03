@@ -35,12 +35,15 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 2;
 
   final PanelController _panelController = PanelController();
   GoogleMapController? _mapController;
   Timer? _liveUpdateTimer;
+  Timer? _zonePulseTimer;
+  Timer? _markerPulseTimer;
 
   final Map<int, StreamSubscription<ChildGps>> _gpsSubscriptions = {};
   StreamSubscription<NotificationM>? _notificationSubscription;
@@ -52,6 +55,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isLoading = true;
   String? _errorMessage;
+  bool _isZonePulsing = false;
+  bool _isMarkerPulsing = false;
+  late AnimationController _pulseAnimController;
 
   Set<Marker> _markers = {};
   Set<Circle> _circles = {};
@@ -68,13 +74,23 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _pulseAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _pulseAnimController.repeat(reverse: true);
     _loadData();
     _startLiveUpdates();
+    _startZonePulse();
+    _startMarkerPulse();
   }
 
   @override
   void dispose() {
     _liveUpdateTimer?.cancel();
+    _zonePulseTimer?.cancel();
+    _markerPulseTimer?.cancel();
+    _pulseAnimController.dispose();
     for (final subscription in _gpsSubscriptions.values) {
       subscription.cancel();
     }
@@ -200,6 +216,28 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _startZonePulse() {
+    _zonePulseTimer = Timer.periodic(
+      const Duration(milliseconds: 750),
+      (timer) {
+        if (!mounted) return;
+        setState(() => _isZonePulsing = !_isZonePulsing);
+        _rebuildZoneCircles();
+      },
+    );
+  }
+
+  void _startMarkerPulse() {
+    _markerPulseTimer = Timer.periodic(
+      const Duration(milliseconds: 1000),
+      (timer) {
+        if (!mounted) return;
+        setState(() => _isMarkerPulsing = !_isMarkerPulsing);
+        _loadMarkers();
+      },
+    );
+  }
+
   Future<void> _loadMarkers() async {
     final Set<Marker> loadedMarkers = {};
     for (final child in _children) {
@@ -208,10 +246,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final zones = _childSafeZones[child.id] ?? [];
       final insideZone = _findContainingZone(location, zones);
-      final label = insideZone != null ? '${child.fullName}\n@ ${insideZone.name}' : child.fullName;
-      final maxLines = insideZone != null ? 2 : 1;
 
-      final icon = await createNameMarker(label, maxLines: maxLines);
+      final icon = await createChildMarker(
+        name: child.fullName,
+        initials: child.initials,
+        color: AppColors.info,
+        isInsideZone: insideZone != null,
+        isPulsing: _isMarkerPulsing,
+      );
       loadedMarkers.add(
         Marker(
           markerId: MarkerId(child.id.toString()),
@@ -298,46 +340,60 @@ class _HomeScreenState extends State<HomeScreen> {
 
       _childSafeZones[child.id] = zones;
 
-      final Set<Circle> circles = {};
-      final Set<Marker> markers = {};
-      const Color zoneColor = AppColors.success;
-
-      for (final zone in zones) {
-        final position = LatLng(zone.latitude, zone.longitude);
-        circles.add(
-          Circle(
-            circleId: CircleId('sz_${zone.id}'),
-            center: position,
-            radius: zone.radius,
-            fillColor: zoneColor.withValues(alpha: 0.25),
-            strokeColor: zoneColor.withValues(alpha: 0.8),
-            strokeWidth: 3,
-            zIndex: 2,
-          ),
-        );
-
-        final icon = await createNameMarker(zone.name, color: zoneColor);
-        markers.add(
-          Marker(
-            markerId: MarkerId('sz_${zone.id}'),
-            position: position,
-            icon: icon,
-            anchor: const Offset(0.5, 1),
-          ),
-        );
-      }
-
-      if (!mounted || _selectedChildId != child.id) return;
-
-      setState(() {
-        _circles = circles;
-        _safeZoneMarkers = markers;
-      });
-
+      _rebuildZoneCircles();
+      await _rebuildZoneMarkers();
       await _loadMarkers();
     } catch (e) {
       print('ERROR loading safe zones: $e');
     }
+  }
+
+  void _rebuildZoneCircles() {
+    final zones = _selectedChildId != null
+        ? (_childSafeZones[_selectedChildId] ?? [])
+        : <SafeZone>[];
+    final Set<Circle> circles = {};
+    const Color zoneColor = AppColors.success;
+    final pulseAlpha = _isZonePulsing ? 0.35 : 0.20;
+    final strokeAlpha = _isZonePulsing ? 0.95 : 0.70;
+
+    for (final zone in zones) {
+      circles.add(
+        Circle(
+          circleId: CircleId('sz_${zone.id}'),
+          center: LatLng(zone.latitude, zone.longitude),
+          radius: zone.radius,
+          fillColor: zoneColor.withValues(alpha: pulseAlpha),
+          strokeColor: zoneColor.withValues(alpha: strokeAlpha),
+          strokeWidth: _isZonePulsing ? 4 : 3,
+          zIndex: 2,
+        ),
+      );
+    }
+    if (!mounted) return;
+    setState(() => _circles = circles);
+  }
+
+  Future<void> _rebuildZoneMarkers() async {
+    final zones = _selectedChildId != null
+        ? (_childSafeZones[_selectedChildId] ?? [])
+        : <SafeZone>[];
+    final Set<Marker> markers = {};
+    const Color zoneColor = AppColors.success;
+
+    for (final zone in zones) {
+      final icon = await createNameMarker(zone.name, color: zoneColor);
+      markers.add(
+        Marker(
+          markerId: MarkerId('sz_${zone.id}'),
+          position: LatLng(zone.latitude, zone.longitude),
+          icon: icon,
+          anchor: const Offset(0.5, 1),
+        ),
+      );
+    }
+    if (!mounted) return;
+    setState(() => _safeZoneMarkers = markers);
   }
 
   Widget _buildBody() {
@@ -371,7 +427,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         GoogleMap(
           initialCameraPosition: const CameraPosition(
-            target: LatLng(37.7749, -122.4194),
+            target: LatLng(36.7749, 6.4194),
             zoom: 15,
           ),
           markers: {

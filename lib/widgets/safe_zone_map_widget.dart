@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../theme/app_colors.dart';
@@ -28,17 +29,38 @@ class SafeZoneMapWidget extends StatefulWidget {
   State<SafeZoneMapWidget> createState() => _SafeZoneMapWidgetState();
 }
 
-class _SafeZoneMapWidgetState extends State<SafeZoneMapWidget> {
+class _SafeZoneMapWidgetState extends State<SafeZoneMapWidget>
+    with SingleTickerProviderStateMixin {
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
   Set<Circle> _circles = {};
   List<SafeZone> _safeZones = [];
   bool _isLoading = true;
+  bool _isPulsing = false;
+  Timer? _pulseTimer;
 
   @override
   void initState() {
     super.initState();
     _loadSafeZones();
+    _startPulse();
+  }
+
+  @override
+  void dispose() {
+    _pulseTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPulse() {
+    _pulseTimer = Timer.periodic(
+      const Duration(milliseconds: 800),
+      (timer) {
+        if (!mounted) return;
+        setState(() => _isPulsing = !_isPulsing);
+        _buildCircles();
+      },
+    );
   }
 
   @override
@@ -78,15 +100,17 @@ class _SafeZoneMapWidgetState extends State<SafeZoneMapWidget> {
   void _buildCircles() {
     final Set<Circle> circles = {};
     const Color zoneColor = AppColors.success;
+    final pulseAlpha = _isPulsing ? 0.35 : 0.20;
+    final strokeAlpha = _isPulsing ? 0.95 : 0.70;
     for (final zone in _safeZones) {
       circles.add(
         Circle(
           circleId: CircleId('sz_${zone.id}'),
           center: LatLng(zone.latitude, zone.longitude),
           radius: zone.radius,
-          fillColor: zoneColor.withValues(alpha: 0.25),
-          strokeColor: zoneColor.withValues(alpha: 0.8),
-          strokeWidth: 3,
+          fillColor: zoneColor.withValues(alpha: pulseAlpha),
+          strokeColor: zoneColor.withValues(alpha: strokeAlpha),
+          strokeWidth: _isPulsing ? 4 : 3,
           zIndex: 2,
         ),
       );

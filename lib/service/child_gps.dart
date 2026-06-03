@@ -7,7 +7,7 @@ import '../models/child_gps.dart';
 import 'auth_token_service.dart';
 
 class ChildLocationService {
-  static const String baseUrl = 'http://zephyr.proxy.rlwy.net:28363/';
+  static const String baseUrl = 'http://zephyr.proxy.rlwy.net:28363';
 
   static Future<ChildGps> getLocation(int childId) async {
     final stream = listenLocation(childId);

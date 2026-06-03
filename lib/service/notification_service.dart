@@ -10,7 +10,7 @@ import 'auth_token_service.dart';
 import 'notification_messages.dart';
 
 class AlertNotificationService {
-  static const String baseUrl = 'http://mainline.proxy.rlwy.net:16322';
+  static const String baseUrl = 'http://zephyr.proxy.rlwy.net:28363';
   static int _notificationId = 0;
 
   static Stream<NotificationM> listenForAlerts() async* {
