@@ -137,8 +137,6 @@ class _TrackingDayViewState extends State<TrackingDayView> {
       _polylines = {polyline};
       _endpointMarkers = {startMarker, endMarker};
     });
-
-    _fitRouteBounds(points);
   }
 
   void _fitRouteBounds(List<LatLng> points) {
@@ -182,7 +180,7 @@ class _TrackingDayViewState extends State<TrackingDayView> {
 
   @override
   void dispose() {
-    _mapController?.dispose();
+    _mapController = null;
     super.dispose();
   }
 
@@ -250,37 +248,38 @@ class _TrackingDayViewState extends State<TrackingDayView> {
           ),
           const SizedBox(height: 12),
           if (_isLoadingRoute)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: CircularProgressIndicator(),
-              ),
+            const Expanded(
+              child: Center(child: CircularProgressIndicator()),
             )
           else if (_routeError != null)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                child: Column(
-                  children: [
-                    const Icon(Icons.cloud_off, size: 48, color: Colors.grey),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'No data for this day',
-                      style: TextStyle(color: Colors.grey, fontSize: 16),
-                    ),
-                  ],
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.cloud_off, size: 48, color: Colors.grey),
+                      const SizedBox(height: 8),
+                      Text(
+                        _routeError!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.grey, fontSize: 14),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             )
           else if (_routeData.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 40),
+            const Expanded(
+              child: Center(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.map_outlined, size: 48, color: Colors.grey),
-                    const SizedBox(height: 8),
-                    const Text(
+                    Icon(Icons.map_outlined, size: 48, color: Colors.grey),
+                    SizedBox(height: 8),
+                    Text(
                       'No data for this day',
                       style: TextStyle(color: Colors.grey, fontSize: 16),
                     ),
@@ -289,8 +288,7 @@ class _TrackingDayViewState extends State<TrackingDayView> {
               ),
             )
           else
-            SizedBox(
-              height: 220,
+            Expanded(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(AppColors.radiusLarge),
                 child: GoogleMap(
@@ -305,11 +303,13 @@ class _TrackingDayViewState extends State<TrackingDayView> {
                   markers: _endpointMarkers,
                   onMapCreated: (controller) {
                     _mapController = controller;
-                    _fitRouteBounds(
-                      _routeData
-                          .map((log) => LatLng(log.latitude, log.longitude))
-                          .toList(),
-                    );
+                    Future.delayed(const Duration(milliseconds: 300), () {
+                      _fitRouteBounds(
+                        _routeData
+                            .map((log) => LatLng(log.latitude, log.longitude))
+                            .toList(),
+                      );
+                    });
                   },
                   myLocationEnabled: false,
                   myLocationButtonEnabled: false,
