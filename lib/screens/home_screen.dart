@@ -16,6 +16,8 @@ import '../service/child_service.dart';
 import '../service/child_gps.dart';
 import '../service/notification_service.dart';
 import '../service/safezone_service.dart';
+import '../service/vital_service.dart';
+import '../service/battery_service.dart';
 
 import '../widgets/child_marker.dart';
 import '../widgets/home_top_bar.dart';
@@ -46,12 +48,11 @@ class _HomeScreenState extends State<HomeScreen>
   Timer? _markerPulseTimer;
 
   final Map<int, StreamSubscription<ChildGps>> _gpsSubscriptions = {};
+  final Map<int, StreamSubscription<dynamic>> _vitalSubscriptions = {};
   StreamSubscription<NotificationM>? _notificationSubscription;
 
   static const double _bottomNavHeight = HomeBottomNav.height;
   static const double _panelBottomGap = 18;
-
-  final Random _random = Random();
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -67,6 +68,7 @@ class _HomeScreenState extends State<HomeScreen>
   List<Child> _children = [];
 
   final Map<int, ChildGps> _locations = {};
+  final Map<int, DateTime> _lastGpsUpdate = {};
   final Map<int, ChildHealth> _health = {};
   final Map<int, ChildDevice> _devices = {};
   final Map<int, List<SafeZone>> _childSafeZones = {};
@@ -95,6 +97,10 @@ class _HomeScreenState extends State<HomeScreen>
       subscription.cancel();
     }
     _gpsSubscriptions.clear();
+    for (final subscription in _vitalSubscriptions.values) {
+      subscription.cancel();
+    }
+    _vitalSubscriptions.clear();
     _notificationSubscription?.cancel();
     _mapController?.dispose();
     super.dispose();
@@ -105,21 +111,14 @@ class _HomeScreenState extends State<HomeScreen>
       final children = await ChildService.getChildren();
 
       final Map<int, ChildGps> loadedLocations = {};
-      final Map<int, ChildHealth> fakeHealth = {};
-      final Map<int, ChildDevice> fakeDevices = {};
 
       for (final child in children) {
-        final location = await ChildLocationService.getLocation(child.id);
-        loadedLocations[child.id] = location;
-        fakeHealth[child.id] = ChildHealth(
-          childId: child.id,
-          heartBeat: 88,
-          oxygenLevel: 98,
-        );
-        fakeDevices[child.id] = ChildDevice(
-          childId: child.id,
-          batteryLevel: 80,
-        );
+        try {
+          final location = await ChildLocationService.getLocation(child.id);
+          loadedLocations[child.id] = location;
+        } catch (e) {
+          print('Failed to load GPS for child ${child.id}: $e');
+        }
       }
 
       if (!mounted) return;
@@ -129,15 +128,14 @@ class _HomeScreenState extends State<HomeScreen>
         _locations.clear();
         _locations.addAll(loadedLocations);
         _health.clear();
-        _health.addAll(fakeHealth);
         _devices.clear();
-        _devices.addAll(fakeDevices);
         _isLoading = false;
         _errorMessage = null;
       });
 
       await _loadMarkers();
       _startGpsStreams();
+      _startVitalStreams();
       _startNotificationStream();
 
       if (children.isNotEmpty) {
@@ -154,19 +152,76 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _startGpsStreams() {
     for (final child in _children) {
-      _gpsSubscriptions[child.id]?.cancel();
-      _gpsSubscriptions[child.id] =
-          ChildLocationService.listenLocation(child.id).listen(
-        (gps) async {
-          if (!mounted) return;
-          setState(() => _locations[child.id] = gps);
-          await _loadMarkers();
-        },
-        onError: (error) =>
-            print('GPS STREAM ERROR child ${child.id}: $error'),
-        onDone: () => print('GPS STREAM DONE child ${child.id}'),
-      );
+      _listenToChildGps(child);
     }
+  }
+
+  void _startVitalStreams() {
+    for (final child in _children) {
+      _listenToChildVitals(child);
+    }
+  }
+
+  void _listenToChildVitals(Child child) {
+    _vitalSubscriptions[child.id]?.cancel();
+    _vitalSubscriptions[child.id] =
+        VitalService.listenVitals(child.id).listen(
+      (vital) {
+        if (!mounted) return;
+        setState(() {
+          _health[child.id] = ChildHealth(
+            childId: child.id,
+            heartBeat: vital.heartbeats,
+            oxygenLevel: vital.oxygenLevel,
+          );
+        });
+      },
+      onError: (error) {
+        print('VITALS STREAM ERROR child ${child.id}: $error');
+        _reconnectVitalsDelayed(child);
+      },
+      onDone: () {
+        print('VITALS STREAM DONE child ${child.id}');
+        _reconnectVitalsDelayed(child);
+      },
+    );
+  }
+
+  void _reconnectVitalsDelayed(Child child) {
+    Future.delayed(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      _listenToChildVitals(child);
+    });
+  }
+
+  void _listenToChildGps(Child child) {
+    _gpsSubscriptions[child.id]?.cancel();
+    _gpsSubscriptions[child.id] =
+        ChildLocationService.listenLocation(child.id).listen(
+      (gps) async {
+        if (!mounted) return;
+        setState(() {
+          _locations[child.id] = gps;
+          _lastGpsUpdate[child.id] = DateTime.now();
+        });
+        await _loadMarkers();
+      },
+      onError: (error) {
+        print('GPS STREAM ERROR child ${child.id}: $error');
+        _reconnectGpsDelayed(child);
+      },
+      onDone: () {
+        print('GPS STREAM DONE child ${child.id}');
+        _reconnectGpsDelayed(child);
+      },
+    );
+  }
+
+  void _reconnectGpsDelayed(Child child) {
+    Future.delayed(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      _listenToChildGps(child);
+    });
   }
 
   void _startNotificationStream() {
@@ -175,17 +230,6 @@ class _HomeScreenState extends State<HomeScreen>
         AlertNotificationService.listenForAlerts().listen(
       (notification) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${notification.title}: ${notification.message}'),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'View',
-              onPressed: _onMessagesTap,
-            ),
-          ),
-        );
       },
       onError: (error) => print('NOTIFICATION STREAM ERROR: $error'),
     );
@@ -193,27 +237,31 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _startLiveUpdates() {
     _liveUpdateTimer = Timer.periodic(
-      const Duration(seconds: 3),
+      const Duration(seconds: 30),
       (timer) {
         if (!mounted) return;
-        setState(() {
-          for (final child in _children) {
-            final health = _health[child.id];
-            final device = _devices[child.id];
-            if (health != null) {
-              health.heartBeat =
-                  (health.heartBeat + _random.nextInt(7) - 3).clamp(60, 140);
-              health.oxygenLevel =
-                  (health.oxygenLevel + _random.nextInt(3) - 1).clamp(90, 100);
-            }
-            if (device != null) {
-              device.batteryLevel =
-                  (device.batteryLevel - _random.nextInt(2)).clamp(0, 100);
-            }
-          }
-        });
+        _fetchBatteryForAll();
       },
     );
+    _fetchBatteryForAll();
+  }
+
+  Future<void> _fetchBatteryForAll() async {
+    for (final child in _children) {
+      try {
+        final batteryStr = await BatteryService.getBattery(child.id);
+        final battery = int.tryParse(batteryStr) ?? 0;
+        if (!mounted) return;
+        setState(() {
+          _devices[child.id] = ChildDevice(
+            childId: child.id,
+            batteryLevel: battery.clamp(0, 100),
+          );
+        });
+      } catch (e) {
+        print('Battery fetch failed for child ${child.id}: $e');
+      }
+    }
   }
 
   void _startZonePulse() {
@@ -247,9 +295,13 @@ class _HomeScreenState extends State<HomeScreen>
       final zones = _childSafeZones[child.id] ?? [];
       final insideZone = _findContainingZone(location, zones);
 
+      final idle = _lastGpsUpdate[child.id] != null
+          ? DateTime.now().difference(_lastGpsUpdate[child.id]!)
+          : Duration.zero;
       final icon = await createChildMarker(
         name: child.fullName,
-        initials: child.initials,
+        speed: location.speed,
+        idleDuration: idle,
         color: AppColors.info,
         isInsideZone: insideZone != null,
         isPulsing: _isMarkerPulsing,
@@ -328,6 +380,8 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
 
+
+
     _loadChildSafeZones(child);
   }
 
@@ -397,22 +451,29 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildBody() {
+    const bottomPad = EdgeInsets.only(bottom: HomeBottomNav.height + 16);
+
     switch (_selectedIndex) {
       case 0:
-        return const MembershipView();
+        return Padding(
+          padding: bottomPad,
+          child: const MembershipView(),
+        );
       case 1:
-        return TrackingDayView(
-          children: _children,
-          locations: _locations,
-          health: _health,
-          devices: _devices,
+        return Padding(
+          padding: bottomPad,
+          child: TrackingDayView(
+            children: _children,
+          ),
         );
       case 3:
-        return InformationView(
-          children: _children,
-          health: _health,
-          devices: _devices,
-          locations: _locations,
+        return Padding(
+          padding: bottomPad,
+          child: InformationView(
+            children: _children,
+            health: _health,
+            devices: _devices,
+          ),
         );
       case 2:
       default:

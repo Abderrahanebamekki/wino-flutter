@@ -1,27 +1,194 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 import '../theme/app_colors.dart';
 import '../models/child.dart';
-import '../models/child_gps.dart';
-import '../models/child_vitals.dart';
-import '../models/child_device.dart';
+import '../models/gps_log.dart';
+import '../service/route_service.dart';
 
-class TrackingDayView extends StatelessWidget {
+class TrackingDayView extends StatefulWidget {
   final List<Child> children;
-  final Map<int, ChildGps> locations;
-  final Map<int, ChildHealth> health;
-  final Map<int, ChildDevice> devices;
 
   const TrackingDayView({
     super.key,
     required this.children,
-    required this.locations,
-    required this.health,
-    required this.devices,
   });
 
   @override
+  State<TrackingDayView> createState() => _TrackingDayViewState();
+}
+
+class _TrackingDayViewState extends State<TrackingDayView> {
+  DateTime _selectedDate = DateTime.now();
+  Child? _selectedChild;
+  List<GpsLog> _routeData = [];
+  bool _isLoadingRoute = false;
+  String? _routeError;
+
+  GoogleMapController? _mapController;
+  Set<Polyline> _polylines = {};
+  Set<Marker> _endpointMarkers = {};
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.children.isNotEmpty) {
+      _selectedChild = widget.children.first;
+      _fetchRoute();
+    }
+  }
+
+  @override
+  void didUpdateWidget(TrackingDayView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.children != oldWidget.children && widget.children.isNotEmpty) {
+      if (_selectedChild == null ||
+          !widget.children.any((c) => c.id == _selectedChild!.id)) {
+        setState(() => _selectedChild = widget.children.first);
+        _fetchRoute();
+      }
+    }
+  }
+
+  Future<void> _fetchRoute() async {
+    if (_selectedChild == null) return;
+
+    setState(() {
+      _isLoadingRoute = true;
+      _routeError = null;
+    });
+
+    try {
+      final dateStr =
+          '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+      final data = await RouteService.getRoute(_selectedChild!.id, dateStr);
+
+      if (!mounted) return;
+
+      data.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+      data.removeWhere((log) =>
+          log.latitude == 0 && log.longitude == 0);
+
+      final deduplicated = <GpsLog>[];
+      for (final log in data) {
+        if (deduplicated.isEmpty ||
+            deduplicated.last.latitude != log.latitude ||
+            deduplicated.last.longitude != log.longitude) {
+          deduplicated.add(log);
+        }
+      }
+
+      setState(() {
+        _routeData = deduplicated;
+        _isLoadingRoute = false;
+      });
+
+      _buildRouteMap();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingRoute = false;
+        _routeError = e.toString();
+      });
+    }
+  }
+
+  void _buildRouteMap() {
+    if (_routeData.isEmpty) {
+      setState(() {
+        _polylines = {};
+        _endpointMarkers = {};
+      });
+      return;
+    }
+
+    final points = _routeData
+        .map((log) => LatLng(log.latitude, log.longitude))
+        .toList();
+
+    final polyline = Polyline(
+      polylineId: const PolylineId('route'),
+      points: points,
+      color: AppColors.info,
+      width: 4,
+      startCap: Cap.roundCap,
+      endCap: Cap.roundCap,
+    );
+
+    final first = _routeData.first;
+    final last = _routeData.last;
+
+    final startMarker = Marker(
+      markerId: const MarkerId('route_start'),
+      position: LatLng(first.latitude, first.longitude),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+      infoWindow: const InfoWindow(title: 'Start'),
+    );
+
+    final endMarker = Marker(
+      markerId: const MarkerId('route_end'),
+      position: LatLng(last.latitude, last.longitude),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+      infoWindow: const InfoWindow(title: 'End'),
+    );
+
+    setState(() {
+      _polylines = {polyline};
+      _endpointMarkers = {startMarker, endMarker};
+    });
+
+    _fitRouteBounds(points);
+  }
+
+  void _fitRouteBounds(List<LatLng> points) {
+    if (points.isEmpty || _mapController == null) return;
+
+    double minLat = points.first.latitude;
+    double maxLat = points.first.latitude;
+    double minLng = points.first.longitude;
+    double maxLng = points.first.longitude;
+
+    for (final p in points) {
+      if (p.latitude < minLat) minLat = p.latitude;
+      if (p.latitude > maxLat) maxLat = p.latitude;
+      if (p.longitude < minLng) minLng = p.longitude;
+      if (p.longitude > maxLng) maxLng = p.longitude;
+    }
+
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(minLat, minLng),
+          northeast: LatLng(maxLat, maxLng),
+        ),
+        60,
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() => _selectedDate = picked);
+      _fetchRoute();
+    }
+  }
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (children.isEmpty) {
+    if (widget.children.isEmpty) {
       return const Center(
         child: Text(
           'No tracking data available',
@@ -36,178 +203,122 @@ class TrackingDayView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 80),
-          Text(
-            'Tracking Day',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Daily GPS tracking and vital signs',
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
-          ),
-          const SizedBox(height: 20),
-          Expanded(
-            child: ListView.builder(
-              itemCount: children.length,
-              itemBuilder: (context, index) => _ChildTrackingCard(
-                child: children[index],
-                location: locations[children[index].id],
-                health: health[children[index].id],
-                device: devices[children[index].id],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChildTrackingCard extends StatelessWidget {
-  final Child child;
-  final ChildGps? location;
-  final ChildHealth? health;
-  final ChildDevice? device;
-
-  const _ChildTrackingCard({
-    required this.child,
-    required this.location,
-    required this.health,
-    required this.device,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-        boxShadow: AppColors.cardShadow,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: AppColors.info,
-                child: Text(
-                  child.initials,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+              Expanded(
+                child: DropdownButtonFormField<int>(
+                  value: _selectedChild?.id,
+                  decoration: const InputDecoration(
+                    labelText: 'Select Child',
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    border: OutlineInputBorder(),
+                    isDense: true,
                   ),
+                  items: widget.children.map((child) {
+                    return DropdownMenuItem(
+                      value: child.id,
+                      child: Text(child.fullName),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() {
+                      _selectedChild = widget.children.firstWhere((c) => c.id == value);
+                    });
+                    _fetchRoute();
+                  },
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                child.fullName,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+              TextButton.icon(
+                onPressed: _pickDate,
+                icon: const Icon(Icons.calendar_today, size: 18),
+                label: Text(
+                  '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                  style: const TextStyle(fontSize: 14),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _TrackingStat(
-                icon: Icons.favorite,
-                label: 'Heart Beat',
-                value: health != null ? '${health!.heartBeat} BPM' : '--',
-                color: AppColors.error,
-              ),
-              const SizedBox(width: 8),
-              _TrackingStat(
-                icon: Icons.monitor_heart,
-                label: 'Oxygen',
-                value: health != null ? '${health!.oxygenLevel}%' : '--',
-                color: AppColors.info,
-              ),
-              const SizedBox(width: 8),
-              _TrackingStat(
-                icon: Icons.battery_full,
-                label: 'Battery',
-                value: device != null ? '${device!.batteryLevel}%' : '--',
-                color: AppColors.success,
-              ),
-            ],
-          ),
-          if (location != null) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(Icons.gps_fixed, size: 18, color: AppColors.textSecondary),
-                const SizedBox(width: 6),
-                Text(
-                  'Lat: ${location!.latitude.toStringAsFixed(4)}, Lng: ${location!.longitude.toStringAsFixed(4)}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.textPrimary,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: const BorderSide(color: AppColors.divider),
                   ),
                 ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_isLoadingRoute)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_routeError != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40),
+                child: Column(
+                  children: [
+                    const Icon(Icons.cloud_off, size: 48, color: Colors.grey),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'No data for this day',
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (_routeData.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40),
+                child: Column(
+                  children: [
+                    const Icon(Icons.map_outlined, size: 48, color: Colors.grey),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'No data for this day',
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 220,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                child: GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(
+                      _routeData.first.latitude,
+                      _routeData.first.longitude,
+                    ),
+                    zoom: 14,
+                  ),
+                  polylines: _polylines,
+                  markers: _endpointMarkers,
+                  onMapCreated: (controller) {
+                    _mapController = controller;
+                    _fitRouteBounds(
+                      _routeData
+                          .map((log) => LatLng(log.latitude, log.longitude))
+                          .toList(),
+                    );
+                  },
+                  myLocationEnabled: false,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
+                  mapToolbarEnabled: false,
+                ),
+              ),
             ),
-          ],
         ],
-      ),
-    );
-  }
-}
-
-class _TrackingStat extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _TrackingStat({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(AppColors.radiusMedium),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 9,
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
       ),
     );
   }

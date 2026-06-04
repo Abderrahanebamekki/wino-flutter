@@ -62,9 +62,17 @@ Future<BitmapDescriptor> createNameMarker(
   return BitmapDescriptor.bytes(byteData!.buffer.asUint8List());
 }
 
+String _formatIdle(Duration d) {
+  final minutes = d.inMinutes;
+  if (minutes >= 1) return '${minutes}min';
+  final seconds = d.inSeconds;
+  return '${(seconds ~/ 30) * 30}s';
+}
+
 Future<BitmapDescriptor> createChildMarker({
   required String name,
-  required String initials,
+  required double speed,
+  required Duration idleDuration,
   Color color = AppColors.info,
   bool isInsideZone = true,
   bool isPulsing = false,
@@ -124,10 +132,13 @@ Future<BitmapDescriptor> createChildMarker({
     Paint()..color = Colors.white.withValues(alpha: 0.35),
   );
 
-  final initialsPainter = TextPainter(
+  final circleLabel = idleDuration >= const Duration(seconds: 30)
+      ? _formatIdle(idleDuration)
+      : speed.toStringAsFixed(1);
+  final labelPainter = TextPainter(
     textDirection: TextDirection.ltr,
     text: TextSpan(
-      text: initials,
+      text: circleLabel,
       style: const TextStyle(
         color: Colors.white,
         fontSize: 16,
@@ -135,12 +146,12 @@ Future<BitmapDescriptor> createChildMarker({
       ),
     ),
   );
-  initialsPainter.layout();
-  initialsPainter.paint(
+  labelPainter.layout();
+  labelPainter.paint(
     canvas,
     Offset(
-      avatarCenterX - initialsPainter.width / 2,
-      avatarCenterY - initialsPainter.height / 2,
+      avatarCenterX - labelPainter.width / 2,
+      avatarCenterY - labelPainter.height / 2,
     ),
   );
 

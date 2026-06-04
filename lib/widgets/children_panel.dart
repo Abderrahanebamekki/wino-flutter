@@ -28,18 +28,22 @@ class ChildrenPanel extends StatelessWidget {
       children: [
         _PanelHandle(onToggle: onToggle),
         const SizedBox(height: 8),
-        _PanelHeader(childrenCount: children.length, onToggle: onToggle),
+        _PanelHeader(childrenCount: _activeChildren.length, onToggle: onToggle),
         Expanded(child: _buildChildrenList()),
       ],
     );
   }
 
+  List<Child> get _activeChildren =>
+      children.where((c) => locations.containsKey(c.id)).toList();
+
   Widget _buildChildrenList() {
+    final active = _activeChildren;
     return ListView.builder(
       controller: scrollController,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      itemCount: children.length,
-      itemBuilder: (context, index) => _buildChildItem(children[index]),
+      itemCount: active.length,
+      itemBuilder: (context, index) => _buildChildItem(active[index]),
     );
   }
 

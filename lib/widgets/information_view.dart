@@ -3,20 +3,18 @@ import '../theme/app_colors.dart';
 import '../models/child.dart';
 import '../models/child_vitals.dart';
 import '../models/child_device.dart';
-import '../models/child_gps.dart';
+import 'vitals_chart_view.dart';
 
 class InformationView extends StatelessWidget {
   final List<Child> children;
   final Map<int, ChildHealth> health;
   final Map<int, ChildDevice> devices;
-  final Map<int, ChildGps> locations;
 
   const InformationView({
     super.key,
     required this.children,
     required this.health,
     required this.devices,
-    required this.locations,
   });
 
   @override
@@ -39,11 +37,20 @@ class InformationView extends StatelessWidget {
           Expanded(
             child: ListView.builder(
               itemCount: children.length,
-              itemBuilder: (context, index) => _ChildInfoCard(
-                child: children[index],
-                health: health[children[index].id],
-                device: devices[children[index].id],
-                location: locations[children[index].id],
+              itemBuilder: (context, index) => GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => VitalsChartView(
+                      child: children[index],
+                    ),
+                  ),
+                ),
+                child: _ChildInfoCard(
+                  child: children[index],
+                  health: health[children[index].id],
+                  device: devices[children[index].id],
+                ),
               ),
             ),
           ),
@@ -57,13 +64,11 @@ class _ChildInfoCard extends StatelessWidget {
   final Child child;
   final ChildHealth? health;
   final ChildDevice? device;
-  final ChildGps? location;
 
   const _ChildInfoCard({
     required this.child,
     required this.health,
     required this.device,
-    required this.location,
   });
 
   @override
@@ -134,22 +139,6 @@ class _ChildInfoCard extends StatelessWidget {
               ),
             ],
           ),
-          if (location != null) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(Icons.speed, color: AppColors.warning, size: 20),
-                const SizedBox(width: 6),
-                Text(
-                  'Speed: ${location!.speed.toStringAsFixed(1)} km/h',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );
