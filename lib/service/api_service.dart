@@ -45,4 +45,48 @@ class ApiService {
 
     throw Exception('Request failed: ${response.statusCode}');
   }
+
+  static Future<void> delete(String endpoint) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: await headers(),
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return;
+    }
+
+    throw Exception('Delete failed: ${response.statusCode}');
+  }
+
+  static Future<void> patch(String endpoint) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: await headers(),
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return;
+    }
+
+    throw Exception('Patch failed: ${response.statusCode}');
+  }
+
+  static Future<dynamic> put(
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: await headers(),
+      body: body != null ? jsonEncode(body) : null,
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.body.trim().isEmpty) return null;
+      return jsonDecode(response.body);
+    }
+
+    throw Exception('Put failed: ${response.statusCode}');
+  }
 }

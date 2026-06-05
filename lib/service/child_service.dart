@@ -84,4 +84,8 @@ class ChildService {
       rethrow;
     }
   }
+
+  static Future<void> deleteChild(int childId) async {
+    await ApiService.delete('/identity/v1/children/$childId');
+  }
 }

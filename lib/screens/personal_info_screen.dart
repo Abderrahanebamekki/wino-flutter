@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:winop/screens/child_screen.dart';
+import 'package:winop/screens/home_screen.dart';
 import '../theme/app_colors.dart';
 import '../widgets/back_title_bar.dart';
 import '../widgets/app_card.dart';
@@ -27,10 +27,11 @@ class PersonalInfoScreenState extends State<PersonalInfoScreen> {
     super.dispose();
   }
 
-  void _goToChildInfoScreen() {
-    Navigator.push(
+  void _goToHomeScreen() {
+    Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const ChildInfoScreen()),
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (_) => false,
     );
   }
 
@@ -98,10 +99,10 @@ class PersonalInfoScreenState extends State<PersonalInfoScreen> {
               FractionallySizedBox(
                 widthFactor: 0.85,
                 child: CustomButton(
-                  text: 'Continue to Child Details',
+                  text: 'Continue',
                   backgroundColor: AppColors.primaryAlt,
                   textColor: Colors.white,
-                  onPressed: _goToChildInfoScreen,
+                  onPressed: _goToHomeScreen,
                 ),
               ),
             ],

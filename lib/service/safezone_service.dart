@@ -74,4 +74,26 @@ class SafezoneService {
       rethrow;
     }
   }
+
+  static Future<void> updateSafezone({
+    required int id,
+    required String name,
+    required double radius,
+    required double longitude,
+    required double latitude,
+  }) async {
+    await ApiService.put(
+      '/geofencing/safezones/$id',
+      body: {
+        'name': name,
+        'radius': radius,
+        'longitude': longitude,
+        'latitude': latitude,
+      },
+    );
+  }
+
+  static Future<void> deleteSafezone(int id) async {
+    await ApiService.delete('/geofencing/safezones/$id');
+  }
 }

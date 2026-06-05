@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'screens/home_screen.dart';
+import 'screens/entry_screen.dart';
 import 'screens/local_notification_service.dart';
 import 'service/auth_token_service.dart';
 import 'theme/app_theme.dart';
@@ -14,14 +15,15 @@ Future<void> main() async {
 
   await LocalNotificationService.init();
 
-  await AuthTokenService.saveToken(
-'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjpbIlJPTEVfVVNFUiJdLCJzdWIiOiJhYmRlcnJhaG1hbmUuYmFtZWtraUB1bml2LWNvbnN0YW50aW5lMi5keiIsImlhdCI6MTc4MDM0NTU2MCwiZXhwIjoxNzg4MTIxNTYwfQ.hKIJ8bNJyMaoOkrdjykWsI9l4XFK-5cNG_hyiVuQU0g'  );
+  final hasToken = await AuthTokenService.hasToken();
 
-  runApp(const MyApp());
+  runApp(MyApp(hasToken: hasToken));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool hasToken;
+
+  const MyApp({super.key, required this.hasToken});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +31,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Winop',
       theme: AppTheme.light,
-      home: const HomeScreen(),
+      home: hasToken ? const HomeScreen() : const EntryScreen(),
     );
   }
 }

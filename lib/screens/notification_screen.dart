@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../models/notification.dart';
 import '../models/notification_category.dart';
+import '../models/invitation_dto.dart';
 import '../service/notification_messages.dart';
+import '../service/invitation_service.dart';
 
 
 class NotificationsScreen extends StatefulWidget {
@@ -14,6 +16,8 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   NotificationCategory _selectedCategory = NotificationCategory.update;
+  List<InvitationDto> _invitations = [];
+  bool _isLoadingInvitations = false;
 
   final List<NotificationM> _notifications = [
     NotificationM(
@@ -34,16 +38,63 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       category: NotificationCategory.update,
       time: DateTime.now().subtract(const Duration(minutes: 40)),
     ),
-    NotificationM(
-      title: 'Invitation',
-      message: 'You received a safezone invitation.',
-      category: NotificationCategory.invitation,
-      time: DateTime.now().subtract(const Duration(hours: 1)),
-    )
   ];
 
   List<NotificationM> get _filteredNotifications =>
       _notifications.where((n) => n.category == _selectedCategory).toList();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInvitations();
+  }
+
+  Future<void> _loadInvitations() async {
+    setState(() => _isLoadingInvitations = true);
+    try {
+      final invitations = await InvitationService.getInvitations();
+      if (!mounted) return;
+      setState(() {
+        _invitations = invitations;
+        _isLoadingInvitations = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingInvitations = false);
+    }
+  }
+
+  Future<void> _acceptInvitation(InvitationDto inv) async {
+    try {
+      await InvitationService.acceptInvitation(inv.id);
+      if (!mounted) return;
+      setState(() => _invitations.removeWhere((i) => i.id == inv.id));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Accepted invitation from ${inv.parentFullName}')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed: $e')),
+      );
+    }
+  }
+
+  Future<void> _declineInvitation(InvitationDto inv) async {
+    try {
+      await InvitationService.declineInvitation(inv.id);
+      if (!mounted) return;
+      setState(() => _invitations.removeWhere((i) => i.id == inv.id));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Declined invitation from ${inv.parentFullName}')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed: $e')),
+      );
+    }
+  }
 
   String _categoryName(NotificationCategory category) {
     switch (category) {
@@ -113,14 +164,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           _buildCategoryTabs(),
           const SizedBox(height: 16),
           Expanded(
-            child: notifications.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: notifications.length,
-                    itemBuilder: (context, index) =>
-                        _buildNotificationCard(notifications[index]),
-                  ),
+            child: _selectedCategory == NotificationCategory.invitation
+                ? _buildInvitationsContent()
+                : notifications.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: notifications.length,
+                        itemBuilder: (context, index) =>
+                            _buildNotificationCard(notifications[index]),
+                      ),
           ),
         ],
       ),
@@ -222,6 +275,121 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     height: 1.4,
                   ),
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvitationsContent() {
+    if (_isLoadingInvitations) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_invitations.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: _invitations.length,
+      itemBuilder: (context, index) => _buildInvitationCard(_invitations[index]),
+    );
+  }
+
+  Widget _buildInvitationCard(InvitationDto inv) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
+        boxShadow: AppColors.softShadow,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: Colors.deepPurple.withValues(alpha: 0.12),
+            child: const Icon(Icons.mail, color: Colors.deepPurple),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Invitation',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (inv.status.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: inv.status == 'PENDING'
+                              ? Colors.orange.withValues(alpha: 0.15)
+                              : inv.status == 'ACCEPTED'
+                                  ? Colors.green.withValues(alpha: 0.15)
+                                  : Colors.red.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          inv.status,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: inv.status == 'PENDING'
+                                ? Colors.orange
+                                : inv.status == 'ACCEPTED'
+                                    ? Colors.green
+                                    : Colors.red,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'From: ${inv.parentFullName}',
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Child: ${inv.childFullName}',
+                  style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                ),
+                if (inv.status == 'PENDING' || inv.status.isEmpty) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => _acceptInvitation(inv),
+                        icon: const Icon(Icons.check_circle, color: Colors.green),
+                        tooltip: 'Accept',
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        onPressed: () => _declineInvitation(inv),
+                        icon: const Icon(Icons.cancel, color: Colors.red),
+                        tooltip: 'Decline',
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

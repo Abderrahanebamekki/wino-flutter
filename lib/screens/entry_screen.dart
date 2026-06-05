@@ -3,6 +3,7 @@ import 'package:winop/widgets/custom_button.dart';
 import '../theme/app_colors.dart';
 import '../widgets/circle_logo.dart';
 import '../screens/singup_screen.dart';
+import '../screens/login_screen.dart';
 
 class EntryScreen extends StatefulWidget {
   const EntryScreen({super.key});
@@ -12,9 +13,8 @@ class EntryScreen extends StatefulWidget {
 }
 
 class _EntryScreenState extends State<EntryScreen> {
-  void _goToNextScreen() async {
-    await Future.delayed(const Duration(seconds: 3));
-    Navigator.pushReplacement(
+  void _goToNextScreen() {
+    Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const SignUpScreen()),
     );
@@ -40,18 +40,6 @@ class _EntryScreenState extends State<EntryScreen> {
                 fontStyle: FontStyle.italic,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              "the serene essential for your",
-              style: TextStyle(fontSize: 14, color: Colors.white),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              "family's daily journey",
-              style: TextStyle(fontSize: 14, color: Colors.white),
-              textAlign: TextAlign.center,
-            ),
             const SizedBox(height: 100),
             CustomButton(
               text: "Get Started",
@@ -62,7 +50,12 @@ class _EntryScreenState extends State<EntryScreen> {
             CustomButton(
               text: "Login",
               textColor: Colors.white,
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              },
             ),
           ],
         ),

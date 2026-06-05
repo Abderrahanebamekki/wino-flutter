@@ -29,6 +29,7 @@ import '../widgets/tracking_day_view.dart';
 import '../widgets/membership_view.dart';
 
 import 'notification_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -360,7 +361,12 @@ class _HomeScreenState extends State<HomeScreen>
     setState(() => _selectedIndex = index);
   }
 
-  void _onSettingsTap() {}
+  void _onSettingsTap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+    );
+  }
 
   void _onMessagesTap() {
     Navigator.push(

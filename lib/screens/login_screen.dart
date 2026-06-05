@@ -1,35 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:winop/screens/verify_email_screen.dart';
+import 'package:winop/screens/forgot_password_screen.dart';
+import 'package:winop/screens/home_screen.dart';
 import '../theme/app_colors.dart';
 import '../widgets/back_title_bar.dart';
 import '../widgets/app_card.dart';
 import '../widgets/circle_logo.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
-class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+import '../service/auth_service.dart';
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  bool _isLoading = false;
 
-  String? passwordError;
-
-  void createAccount() {
-    setState(() {
-      if (passwordController.text.length < 8) {
-        passwordError = 'Password must be at least 8 characters';
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const VerifyEmailScreen()),
-        );
-      }
-    });
+  Future<void> login() async {
+    setState(() => _isLoading = true);
+    try {
+      await AuthService.signIn(
+        email: emailController.text.trim(),
+        password: passwordController.text,
+      );
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (_) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -44,7 +56,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: BackTitleBar(
-        title: 'Create Account',
+        title: 'Login',
         onTap: () => Navigator.pop(context),
       ),
       body: SafeArea(
@@ -57,7 +69,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const CircleLogo(size: 140),
                 const SizedBox(height: 20),
                 const Text(
-                  'JOIN WINO',
+                  'WELCOME BACK',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -67,7 +79,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Protect what matters most with the wino',
+                  'WINO',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
                 ),
@@ -88,8 +100,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         hint: 'Enter your password',
                         controller: passwordController,
                         isPassword: true,
-                        errorText: passwordError,
                         maxLength: 100,
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ForgotPasswordScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              color: AppColors.primaryDark,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -98,13 +130,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 FractionallySizedBox(
                   widthFactor: 0.8,
                   child: CustomButton(
-                    text: 'Create Account',
+                    text: 'Login',
                     backgroundColor: AppColors.primaryDark,
-                    onPressed: createAccount,
+                    onPressed: _isLoading ? null : () => login(),
                     textColor: const Color(0xFFFFFFFF),
                   ),
                 ),
-
+                if (_isLoading)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 16),
+                    child: CircularProgressIndicator(),
+                  ),
               ],
             ),
           ),
