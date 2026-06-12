@@ -8,6 +8,7 @@ import '../models/notification_category.dart';
 import '../screens/local_notification_service.dart';
 import 'auth_token_service.dart';
 import 'notification_messages.dart';
+import 'notification_preferences_service.dart';
 
 class AlertNotificationService {
   static const String baseUrl = 'http://zephyr.proxy.rlwy.net:28363';
@@ -101,6 +102,16 @@ class AlertNotificationService {
             title = 'Update';
             message = json['message'] as String? ?? '';
         }
+
+        final isSpeedRelated = typeStr.toUpperCase() == 'ABNORMAL_SPEED' ||
+            (json['message'] as String? ?? '').toLowerCase().contains('speed') ||
+            message.toLowerCase().contains('speed');
+
+        final shouldShow = await NotificationPreferencesService.shouldShowNotification(
+          isSpeedRelated: isSpeedRelated,
+        );
+
+        if (!shouldShow) continue;
 
         final notification = NotificationM(
           title: title,
